@@ -137,7 +137,7 @@ class JadwalCard extends StatelessWidget {
             ? _photoPlaceholder()
             : Image.network(url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _photoPlaceholder()),
+                errorBuilder: (_, _, _) => _photoPlaceholder(),),
       ),
     );
   }
