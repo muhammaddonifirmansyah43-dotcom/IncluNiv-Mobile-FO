@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../core/mhs_colors.dart';
@@ -31,80 +30,96 @@ class MhsStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 10,
+    final radius = BorderRadius.circular(16);
+    final adaBorder = background == MhsColors.white;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: radius,
+        // Kartu putih diberi border tipis (oranye untuk "Berlangsung").
+        border: adaBorder
+            ? Border.all(
+                color: (orangeDot ? MhsColors.orange : MhsColors.border)
+                    .withOpacity(.35),
+              )
+            : null,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x260F2D5B),
+            blurRadius: 12,
+            offset: Offset(0, 5),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: iconBackground,
-                      borderRadius: BorderRadius.circular(9),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: iconBackground,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 18),
                     ),
-                    child: Icon(
-                      icon,
-                      color: iconColor,
-                      size: 17,
-                    ),
-                  ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: MhsText.fontFamily,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        color: valueColor,
+                    const Spacer(),
+                    Flexible(
+                      child: Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: MhsText.fontFamily,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          color: valueColor,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 9),
-              Row(
-                children: [
-                  if (orangeDot) ...[
-                    const Icon(
-                      Icons.circle,
-                      size: 6,
-                      color: MhsColors.orange,
-                    ),
-                    const SizedBox(width: 4),
                   ],
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: MhsText.fontFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: labelColor,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    if (orangeDot) ...[
+                      const Icon(
+                        Icons.circle,
+                        size: 6,
+                        color: MhsColors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: MhsText.fontFamily,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: labelColor,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

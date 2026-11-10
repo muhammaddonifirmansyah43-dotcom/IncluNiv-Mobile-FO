@@ -7,7 +7,9 @@ import '../widgets/jadwal_cards.dart';
 import '../widgets/jadwal_kosong.dart';
 import '../widgets/mhs_bars.dart';
 import 'jadwal_form_page.dart';
-import 'profil_page.dart';
+
+// Biru tab aktif (sama dengan tombol utama di beranda).
+const Color _biruAktif = Color(0xFF0057C2);
 
 class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key, this.tabAwal = JadwalStatus.akanDatang});
@@ -25,12 +27,6 @@ class _JadwalPageState extends State<JadwalPage> {
   void initState() {
     super.initState();
     _tab = widget.tabAwal;
-  }
-
-  void _bukaProfil() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ProfilMahasiswaPage()),
-    );
   }
 
   Future<void> _tambah() async {
@@ -52,11 +48,15 @@ class _JadwalPageState extends State<JadwalPage> {
       animation: store,
       builder: (context, _) {
         final daftar = store.daftar(_tab);
-        final kosong = daftar.isEmpty;
+        final tabKosong = daftar.isEmpty;
+
+        // Tombol "Tambah" di ilustrasi hanya untuk kondisi belum ada jadwal
+        // sama sekali. Kalau hanya satu tab yang kosong, cukup ilustrasi.
+        final belumAdaJadwal = store.kosong;
 
         return Scaffold(
           backgroundColor: MhsColors.white,
-          floatingActionButton: kosong
+          floatingActionButton: belumAdaJadwal
               ? null
               : FloatingActionButton(
                   onPressed: _tambah,
@@ -70,10 +70,8 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
           body: Column(
             children: [
-              MhsSubAppBar(
-                title: kosong ? 'Jadwal Perkuliahan' : null,
-                onAvatarTap: _bukaProfil,
-              ),
+              // Tanpa judul; logo IncluNiv di kanan sesuai desain.
+              const MhsSubAppBar(logoDiKanan: true),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 96),
@@ -121,8 +119,10 @@ class _JadwalPageState extends State<JadwalPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (kosong)
-                      JadwalKosongView(onTambah: _tambah)
+                    if (tabKosong)
+                      JadwalKosongView(
+                        onTambah: belumAdaJadwal ? _tambah : null,
+                      )
                     else
                       for (final j in daftar)
                         Padding(
@@ -156,38 +156,52 @@ class _TabChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final warna = aktif ? MhsColors.white : MhsColors.navy;
+    final radius = BorderRadius.circular(12);
+
     return Expanded(
-      child: Material(
-        color: aktif ? MhsColors.blue : MhsColors.barBg,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: aktif ? MhsColors.blue : MhsColors.border,
-              ),
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: aktif ? _biruAktif : MhsColors.white,
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(
+              color: aktif
+                  ? _biruAktif.withOpacity(.35)
+                  : const Color(0x260F2D5B),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                children: [
-                  Icon(icon, size: 15, color: warna),
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: MhsText.fontFamily,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: warna,
-                    ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 15, color: warna),
+                      const SizedBox(width: 4),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontFamily: MhsText.fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: warna,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
