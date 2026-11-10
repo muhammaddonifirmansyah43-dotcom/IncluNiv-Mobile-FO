@@ -19,7 +19,7 @@ class OngoingSessionCard extends StatelessWidget {
             ? _placeholder()
             : Image.network(url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder()),
+                errorBuilder: (_, _, _) => _placeholder(),),
       ),
     );
   }
