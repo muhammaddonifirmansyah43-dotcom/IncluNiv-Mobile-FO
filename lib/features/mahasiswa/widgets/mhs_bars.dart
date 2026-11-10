@@ -9,34 +9,53 @@ const BoxDecoration _barDecoration = BoxDecoration(
   ],
 );
 
+/// Lokasi aset logo (harus terdaftar di pubspec.yaml).
+const String _asetLogo = 'assets/images/landing_illustration.png';
+
 class MhsLogo extends StatelessWidget {
-  const MhsLogo({super.key});
+  const MhsLogo({super.key, this.kecil = false});
+
+  /// Versi lebih kecil untuk header halaman dalam.
+  final bool kecil;
 
   @override
   Widget build(BuildContext context) {
+    final ukuranLogo = kecil ? 30.0 : 38.0;
+    final ukuranIkon = kecil ? 15.0 : 18.0;
+    final ukuranTeks = kecil ? 20.0 : 24.0;
+
+    // Cadangan kalau aset belum terdaftar / gagal dimuat.
+    final cadangan = Container(
+      width: ukuranLogo,
+      height: ukuranLogo,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: MhsColors.navy,
+        border: Border.fromBorderSide(
+          BorderSide(color: MhsColors.orange, width: 2.5),
+        ),
+      ),
+      child: Icon(
+        Icons.accessibility_new_rounded,
+        size: ukuranIkon,
+        color: MhsColors.white,
+      ),
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Placeholder logo. Ganti dengan Image.asset kalau aset logo sudah ada.
-        Container(
-          width: 34,
-          height: 34,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: MhsColors.navy,
-            border: Border.fromBorderSide(
-              BorderSide(color: MhsColors.orange, width: 2.5),
-            ),
-          ),
-          child: const Icon(
-            Icons.accessibility_new_rounded,
-            size: 18,
-            color: MhsColors.white,
-          ),
+        Image.asset(
+          _asetLogo,
+          width: ukuranLogo,
+          height: ukuranLogo,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, _, _) => cadangan,
         ),
         const SizedBox(width: 8),
-        const Text.rich(
-          TextSpan(
+        Text.rich(
+          const TextSpan(
             children: [
               TextSpan(
                 text: 'Inclu',
@@ -50,7 +69,7 @@ class MhsLogo extends StatelessWidget {
           ),
           style: TextStyle(
             fontFamily: MhsText.fontFamily,
-            fontSize: 24,
+            fontSize: ukuranTeks,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -139,12 +158,19 @@ class MhsBrandBar extends StatelessWidget {
   }
 }
 
-/// Header halaman dalam: panah kembali, judul (opsional), avatar.
+/// Header halaman dalam: panah kembali, judul (opsional), lalu avatar
+/// atau logo IncluNiv di kanan (kalau [logoDiKanan] true).
 class MhsSubAppBar extends StatelessWidget {
-  const MhsSubAppBar({super.key, this.title, this.onAvatarTap});
+  const MhsSubAppBar({
+    super.key,
+    this.title,
+    this.onAvatarTap,
+    this.logoDiKanan = false,
+  });
 
   final String? title;
   final VoidCallback? onAvatarTap;
+  final bool logoDiKanan;
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +200,10 @@ class MhsSubAppBar extends StatelessWidget {
             )
           else
             const Spacer(),
-          MhsAvatarButton(onTap: onAvatarTap),
+          if (logoDiKanan)
+            const MhsLogo(kecil: true)
+          else
+            MhsAvatarButton(onTap: onAvatarTap),
         ],
       ),
     );

@@ -16,6 +16,9 @@ import 'profil_page.dart';
 class BerandaMahasiswaPage extends StatelessWidget {
   const BerandaMahasiswaPage({super.key});
 
+  // Biru tombol utama (lebih tua dari biru default).
+  static const Color _biruTombol = Color(0xFF0057C2);
+
   void _bukaProfil(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const ProfilMahasiswaPage()),
@@ -50,7 +53,9 @@ class BerandaMahasiswaPage extends StatelessWidget {
           final berlangsung = jadwalStore.daftar(JadwalStatus.berlangsung);
           final akanDatang = jadwalStore.daftar(JadwalStatus.akanDatang);
           final selesai = jadwalStore.jumlah(JadwalStatus.selesai);
-          String angka(int n) => kosong ? '–' : '$n';
+
+          // Saat belum ada jadwal sama sekali, tampilkan strip "—".
+          String angka(int n) => kosong ? '—' : '$n';
 
           return Column(
             children: [
@@ -127,6 +132,7 @@ class BerandaMahasiswaPage extends StatelessWidget {
                       MhsButton(
                         label: 'Jadwal Perkuliahan',
                         icon: Icons.event_note_rounded,
+                        background: _biruTombol,
                         onPressed: () => _bukaJadwal(context),
                       ),
                       if (berlangsung.isEmpty && akanDatang.isEmpty)
@@ -146,8 +152,10 @@ class BerandaMahasiswaPage extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: JadwalRingkasCard(
                                 jadwal: j,
-                                onLihatDetail: () =>
-                                    tampilkanDetailJadwal(context, j),
+                                onLihatDetail: () => _bukaJadwal(
+                                  context,
+                                  JadwalStatus.berlangsung,
+                                ),
                               ),
                             ),
                         ],
@@ -158,8 +166,10 @@ class BerandaMahasiswaPage extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: JadwalRingkasCard(
                                 jadwal: j,
-                                onLihatDetail: () =>
-                                    tampilkanDetailJadwal(context, j),
+                                onLihatDetail: () => _bukaJadwal(
+                                  context,
+                                  JadwalStatus.akanDatang,
+                                ),
                               ),
                             ),
                           if (akanDatang.length > 3)

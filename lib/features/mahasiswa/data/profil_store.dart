@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 /// Data profil dummy (diambil dari frame Figma).
@@ -14,6 +16,10 @@ class ProfilStore extends ChangeNotifier {
   final String disabilitas = 'Tuli';
   String sandi = 'password';
 
+  /// Isi foto profil (bytes). null = pakai ikon default.
+  /// Pakai bytes supaya jalan di Android, iOS, desktop, dan web.
+  Uint8List? foto;
+
   String get panggilan => nama.trim().split(RegExp(r'\s+')).first;
 
   void simpan({
@@ -21,11 +27,13 @@ class ProfilStore extends ChangeNotifier {
     required String email,
     required String telepon,
     required String sandi,
+    Uint8List? foto,
   }) {
     this.nama = nama;
     this.email = email;
     this.telepon = telepon;
     this.sandi = sandi;
+    this.foto = foto;
     notifyListeners();
   }
 }

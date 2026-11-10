@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,6 +8,15 @@ import '../data/jadwal_store.dart';
 import '../widgets/mhs_bars.dart';
 import '../widgets/mhs_button.dart';
 import '../widgets/kalender_tanggal_picker.dart';
+
+const List<String> _bulanSingkat = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+];
+
+/// Format tanggal pendek (tanpa nama hari), contoh: 10 Nov 2026.
+String _tglSingkat(DateTime d) =>
+    '${d.day} ${_bulanSingkat[d.month - 1]} ${d.year}';
 
 class JadwalFormPage extends StatefulWidget {
   const JadwalFormPage({super.key, this.onSimpan});
@@ -21,6 +29,8 @@ class JadwalFormPage extends StatefulWidget {
 }
 
 class _JadwalFormPageState extends State<JadwalFormPage> {
+  static const String _pesanWajib = 'Wajib diisi';
+
   final _mk = TextEditingController();
   final _gedung = TextEditingController();
   final _ruang = TextEditingController();
@@ -55,9 +65,7 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
 
   // Mengubah input teks menjadi TimeOfDay.
   void _ubahJam(String value, {required bool mulai}) {
-    final cocok = RegExp(
-      r'^([01]\d|2[0-3]):([0-5]\d)$',
-    ).firstMatch(value);
+    final cocok = RegExp(r'^([01]\d|2[0-3]):([0-5]\d)$').firstMatch(value);
 
     TimeOfDay? waktu;
 
@@ -97,9 +105,7 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
       initial = batasAkhir;
     }
 
-    final idx = _hari == null
-        ? null
-        : daftarHari.indexOf(_hari!) + 1;
+    final idx = _hari == null ? null : daftarHari.indexOf(_hari!) + 1;
 
     final hasil = await showKalenderTanggal(
       context: context,
@@ -121,33 +127,30 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
     });
   }
 
+  /// Menandai SEMUA kolom yang belum terisi sekaligus.
   bool _validasi() {
     final e = <String, String>{};
 
-    if (_mk.text.trim().isEmpty) {
-      e['mk'] = 'Nama mata kuliah wajib diisi';
-    }
-
-    if (_hari == null) e['hari'] = 'Pilih hari';
-    if (_tanggal == null) e['tanggal'] = 'Pilih tanggal';
+    if (_mk.text.trim().isEmpty) e['mk'] = _pesanWajib;
+    if (_hari == null) e['hari'] = _pesanWajib;
+    if (_tanggal == null) e['tanggal'] = _pesanWajib;
 
     if (_jamMulaiController.text.trim().isEmpty) {
-      e['mulai'] = 'Masukkan jam mulai';
+      e['mulai'] = _pesanWajib;
     } else if (_mulai == null) {
-      e['mulai'] = 'Gunakan format HH:mm (00:00–23:59)';
+      e['mulai'] = 'Format HH:mm (00:00–23:59)';
     }
 
     if (_jamSelesaiController.text.trim().isEmpty) {
-      e['selesai'] = 'Masukkan jam selesai';
+      e['selesai'] = _pesanWajib;
     } else if (_selesai == null) {
-      e['selesai'] = 'Gunakan format HH:mm (00:00–23:59)';
-    } else if (_mulai != null &&
-        _menit(_selesai!) <= _menit(_mulai!)) {
+      e['selesai'] = 'Format HH:mm (00:00–23:59)';
+    } else if (_mulai != null && _menit(_selesai!) <= _menit(_mulai!)) {
       e['selesai'] = 'Harus setelah jam mulai';
     }
 
-    if (_gedung.text.trim().isEmpty) e['gedung'] = 'Wajib diisi';
-    if (_ruang.text.trim().isEmpty) e['ruang'] = 'Wajib diisi';
+    if (_gedung.text.trim().isEmpty) e['gedung'] = _pesanWajib;
+    if (_ruang.text.trim().isEmpty) e['ruang'] = _pesanWajib;
 
     setState(() => _error = e);
     return e.isEmpty;
@@ -184,7 +187,7 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
       backgroundColor: MhsColors.white,
       body: Column(
         children: [
-          const MhsSubAppBar(title: 'Pengisian jadwal'),
+          const MhsSubAppBar(logoDiKanan: true),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -218,7 +221,6 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                     const SizedBox(height: 18),
                     _Kolom(
                       label: 'Nama Mata Kuliah',
-                      wajib: true,
                       error: _error['mk'],
                       child: _InputTeks(
                         controller: _mk,
@@ -237,21 +239,19 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                             error: _error['hari'],
                             child: _KotakDropdown(
                               nilai: _hari,
-                              hint: 'Senin',
+                              hint: 'Pilih hari',
                               adaError: _error.containsKey('hari'),
                               onChanged: (v) {
                                 setState(() {
                                   _hari = v;
-                                  final idx =
-                                      daftarHari.indexOf(v!) + 1;
+                                  final idx = daftarHari.indexOf(v!) + 1;
 
                                   if (_tanggal != null &&
                                       _tanggal!.weekday != idx) {
                                     _tanggal = null;
                                   }
 
-                                  _error = Map.of(_error)
-                                    ..remove('hari');
+                                  _error = Map.of(_error)..remove('hari');
                                 });
                               },
                             ),
@@ -260,12 +260,12 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _Kolom(
-                            label: 'Mulai Tanggal',
+                            label: 'Tanggal',
                             error: _error['tanggal'],
                             child: _KotakPilih(
                               teks: _tanggal == null
                                   ? null
-                                  : formatTanggal(_tanggal!),
+                                  : _tglSingkat(_tanggal!),
                               hint: '23 Okt 2024',
                               icon: Icons.calendar_today_outlined,
                               adaError: _error.containsKey('tanggal'),
@@ -340,6 +340,26 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                       ],
                     ),
                     const SizedBox(height: 22),
+                    if (_error.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0x1AE53935),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'Ada ${_error.length} bagian yang belum terisi '
+                          'atau belum sesuai.',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: MhsColors.danger,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     MhsButton(
                       label: 'Simpan Jadwal',
                       icon: Icons.check_circle_outline_rounded,
@@ -365,16 +385,10 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
 }
 
 class _Kolom extends StatelessWidget {
-  const _Kolom({
-    required this.label,
-    required this.child,
-    this.wajib = false,
-    this.error,
-  });
+  const _Kolom({required this.label, required this.child, this.error});
 
   final String label;
   final Widget child;
-  final bool wajib;
   final String? error;
 
   @override
@@ -382,21 +396,7 @@ class _Kolom extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(child: Text(label, style: MhsText.label)),
-            if (wajib)
-              const Text(
-                '*Wajib',
-                style: TextStyle(
-                  fontFamily: MhsText.fontFamily,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: MhsColors.danger,
-                ),
-              ),
-          ],
-        ),
+        Text(label, style: MhsText.label),
         const SizedBox(height: 6),
         child,
         if (error != null)
@@ -419,9 +419,7 @@ class _Kolom extends StatelessWidget {
 BoxDecoration _kotak(bool adaError) => BoxDecoration(
   color: MhsColors.fieldFill,
   borderRadius: BorderRadius.circular(10),
-  border: Border.all(
-    color: adaError ? MhsColors.danger : MhsColors.fieldFill,
-  ),
+  border: Border.all(color: adaError ? MhsColors.danger : MhsColors.fieldFill),
 );
 
 const TextStyle _isiStyle = TextStyle(
@@ -577,7 +575,7 @@ class _KotakDropdown extends StatelessWidget {
         child: DropdownButton<String>(
           value: nilai,
           isExpanded: true,
-          hint: const Text('Senin', style: _hintStyle),
+          hint: Text(hint, style: _hintStyle),
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
             color: MhsColors.hint,

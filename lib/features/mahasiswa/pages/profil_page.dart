@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../core/mhs_colors.dart';
 import '../data/profil_store.dart';
@@ -14,6 +17,7 @@ class ProfilMahasiswaPage extends StatefulWidget {
 
 class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
   final _store = ProfilStore.instance;
+  final _picker = ImagePicker();
 
   late final TextEditingController _nama = TextEditingController();
   late final TextEditingController _nimC = TextEditingController();
@@ -24,8 +28,8 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
   late final TextEditingController _sandi = TextEditingController();
 
   bool _edit = false;
-  bool _sembunyiDisabilitas = false;
   bool _sembunyiSandi = true;
+  Uint8List? _foto;
   Map<String, String> _error = {};
 
   @override
@@ -42,6 +46,7 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
     _prodi.text = _store.prodi;
     _disabilitas.text = _store.disabilitas;
     _sandi.text = _store.sandi;
+    _foto = _store.foto;
   }
 
   @override
@@ -62,10 +67,43 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
 
   void _toggleEdit() {
     setState(() {
-      if (_edit) _muat();
+      if (_edit) _muat(); // batal: kembalikan data & foto lama
       _edit = !_edit;
       _error = {};
     });
+  }
+
+  Future<void> _pilihFoto() async {
+    final sumber = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Pilih dari galeri'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Ambil foto'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (sumber == null) return;
+
+    final x = await _picker.pickImage(
+      source: sumber,
+      maxWidth: 800,
+      imageQuality: 85,
+    );
+    if (x == null) return;
+    final bytes = await x.readAsBytes();
+    if (mounted) setState(() => _foto = bytes);
   }
 
   void _simpan() {
@@ -95,6 +133,7 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
       email: _email.text.trim(),
       telepon: _telp.text.trim(),
       sandi: _sandi.text,
+      foto: _foto,
     );
 
     setState(() => _edit = false);
@@ -130,7 +169,12 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
                   ),
                   const SizedBox(height: 14),
                   Center(
-                    child: _Avatar(editing: _edit, onTap: _toggleEdit),
+                    child: _Avatar(
+                      editing: _edit,
+                      foto: _foto,
+                      onEditTap: _toggleEdit,
+                      onGantiFoto: _pilihFoto,
+                    ),
                   ),
                   const SizedBox(height: 18),
                   _ProfilField(
@@ -176,11 +220,6 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
                     controller: _disabilitas,
                     modeEdit: _edit,
                     bisaDiedit: false,
-                    punyaToggle: true,
-                    tersembunyi: _sembunyiDisabilitas,
-                    onToggle: () => setState(
-                      () => _sembunyiDisabilitas = !_sembunyiDisabilitas,
-                    ),
                   ),
                   _ProfilField(
                     label: 'Kata Sandi',
@@ -220,10 +259,17 @@ class _ProfilMahasiswaPageState extends State<ProfilMahasiswaPage> {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.editing, required this.onTap});
+  const _Avatar({
+    required this.editing,
+    required this.foto,
+    required this.onEditTap,
+    required this.onGantiFoto,
+  });
 
   final bool editing;
-  final VoidCallback onTap;
+  final Uint8List? foto;
+  final VoidCallback onEditTap;
+  final VoidCallback onGantiFoto;
 
   @override
   Widget build(BuildContext context) {
@@ -233,16 +279,28 @@ class _Avatar extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Container(
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFFFD8BF),
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                size: 100,
-                color: MhsColors.white,
+            child: GestureDetector(
+              // Saat mode edit, ketuk foto untuk menggantinya.
+              onTap: editing ? onGantiFoto : null,
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFD8BF),
+                  image: foto == null
+                      ? null
+                      : DecorationImage(
+                          image: MemoryImage(foto!),
+                          fit: BoxFit.cover,
+                        ),
+                ),
+                child: foto == null
+                    ? const Icon(
+                        Icons.person_rounded,
+                        size: 100,
+                        color: MhsColors.white,
+                      )
+                    : null,
               ),
             ),
           ),
@@ -251,10 +309,11 @@ class _Avatar extends StatelessWidget {
             bottom: 8,
             child: Semantics(
               button: true,
-              label: editing ? 'Batalkan edit profil' : 'Edit profil',
+              label: editing ? 'Ganti foto profil' : 'Edit profil',
               child: InkWell(
                 customBorder: const CircleBorder(),
-                onTap: onTap,
+                // Belum edit: masuk mode edit. Sudah edit: buka pilihan foto.
+                onTap: editing ? onGantiFoto : onEditTap,
                 child: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
@@ -269,7 +328,7 @@ class _Avatar extends StatelessWidget {
                     ],
                   ),
                   child: Icon(
-                    editing ? Icons.close_rounded : Icons.edit_rounded,
+                    editing ? Icons.photo_camera_rounded : Icons.edit_rounded,
                     size: 18,
                     color: editing ? MhsColors.white : MhsColors.navy,
                   ),
