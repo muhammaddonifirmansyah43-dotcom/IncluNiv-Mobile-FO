@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/app_illustration.dart';
+import '../register/register_page.dart';
 
 class LandingPage extends StatelessWidget {
   final VoidCallback? onRegister;
@@ -16,6 +17,21 @@ class LandingPage extends StatelessWidget {
 
   static const navy = Color(0xFF0F2D5B);
   static const orange = Color(0xFFF97316);
+
+  // Navigasi ke halaman Register
+  void _openRegister(BuildContext context) {
+    if (onRegister != null) {
+      onRegister!();
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RegisterPage(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +57,23 @@ class LandingPage extends StatelessWidget {
                 child: _circle(
                   const Color(0xFFFFE3D4),
                   100,
+                ),
+              ),
+
+              // Dekorasi kanan atas
+              Positioned(
+                top: -30,
+                right: -45,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: orange,
+                      width: 3,
+                    ),
+                  ),
                 ),
               ),
 
@@ -71,7 +104,7 @@ class LandingPage extends StatelessWidget {
 
                           const SizedBox(height: 24),
 
-                          // Deskripsi
+                          // Deskripsi aplikasi
                           const Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 25,
@@ -100,11 +133,9 @@ class LandingPage extends StatelessWidget {
                           _button(
                             text: 'BUAT AKUN',
                             filled: true,
-                            onPressed: onRegister ??
-                                () => _message(
-                                  context,
-                                  'Halaman registrasi belum dihubungkan.',
-                                ),
+                            onPressed: () {
+                              _openRegister(context);
+                            },
                           ),
 
                           const SizedBox(height: 13),
@@ -113,17 +144,23 @@ class LandingPage extends StatelessWidget {
                           _button(
                             text: 'MASUK',
                             filled: false,
-                            onPressed: onLogin ??
-                                () => _message(
+                            onPressed: () {
+                              if (onLogin != null) {
+                                onLogin!();
+                              } else {
+                                _message(
                                   context,
                                   'Halaman login belum dihubungkan.',
-                                ),
+                                );
+                              }
+                            },
                           ),
 
                           const Spacer(),
 
                           const SizedBox(height: 40),
 
+                          // Footer informasi
                           const _LandingFooter(),
 
                           const SizedBox(height: 20),
@@ -184,7 +221,9 @@ class LandingPage extends StatelessWidget {
                 onPressed: onPressed,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: orange,
-                  side: const BorderSide(color: orange),
+                  side: const BorderSide(
+                    color: orange,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(9),
                   ),
@@ -203,11 +242,14 @@ class LandingPage extends StatelessWidget {
 
   void _message(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+      ),
     );
   }
 }
 
+// FOOTER LANDING PAGE
 
 class _LandingFooter extends StatelessWidget {
   const _LandingFooter();
@@ -254,10 +296,16 @@ class _LandingFooter extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: item(Icons.phone, '(0341) 551-611'),
+                child: item(
+                  Icons.phone,
+                  '(0341) 551-611',
+                ),
               ),
               Expanded(
-                child: item(Icons.email_outlined, 'info@ub.ac.id'),
+                child: item(
+                  Icons.email_outlined,
+                  'info@ub.ac.id',
+                ),
               ),
             ],
           ),
@@ -267,10 +315,16 @@ class _LandingFooter extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: item(Icons.camera_alt_outlined, '@pld.ub'),
+                child: item(
+                  Icons.camera_alt_outlined,
+                  '@pld.ub',
+                ),
               ),
               Expanded(
-                child: item(Icons.language, 'pld.ub.ac.id'),
+                child: item(
+                  Icons.language,
+                  'pld.ub.ac.id',
+                ),
               ),
             ],
           ),
