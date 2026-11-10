@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/format_waktu.dart';
 import '../core/mhs_colors.dart';
@@ -6,6 +8,7 @@ import '../data/jadwal_model.dart';
 import '../data/jadwal_store.dart';
 import '../widgets/mhs_bars.dart';
 import '../widgets/mhs_button.dart';
+import '../widgets/kalender_tanggal_picker.dart';
 
 class JadwalFormPage extends StatefulWidget {
   const JadwalFormPage({super.key, this.onSimpan});
@@ -22,6 +25,10 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
   final _gedung = TextEditingController();
   final _ruang = TextEditingController();
 
+  // Controller untuk input jam manual.
+  final _jamMulaiController = TextEditingController();
+  final _jamSelesaiController = TextEditingController();
+
   String? _hari;
   DateTime? _tanggal;
   TimeOfDay? _mulai;
@@ -33,6 +40,8 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
     _mk.dispose();
     _gedung.dispose();
     _ruang.dispose();
+    _jamMulaiController.dispose();
+    _jamSelesaiController.dispose();
     super.dispose();
   }
 
@@ -44,55 +53,71 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
     }
   }
 
+  // Mengubah input teks menjadi TimeOfDay.
+  void _ubahJam(String value, {required bool mulai}) {
+    final cocok = RegExp(
+      r'^([01]\d|2[0-3]):([0-5]\d)$',
+    ).firstMatch(value);
+
+    TimeOfDay? waktu;
+
+    if (cocok != null) {
+      waktu = TimeOfDay(
+        hour: int.parse(cocok.group(1)!),
+        minute: int.parse(cocok.group(2)!),
+      );
+    }
+
+    setState(() {
+      if (mulai) {
+        _mulai = waktu;
+      } else {
+        _selesai = waktu;
+      }
+
+      if (waktu != null) {
+        _error = Map.of(_error)..remove(mulai ? 'mulai' : 'selesai');
+      }
+    });
+  }
+
+  // Memilih tanggal menggunakan kalender custom.
   Future<void> _pilihTanggal() async {
     final now = DateTime.now();
     final awal = DateTime(now.year, now.month, now.day);
-    var initial = _tanggal ?? awal;
-    final idx = _hari == null ? null : daftarHari.indexOf(_hari!) + 1;
 
-    if (idx != null) {
-      while (initial.weekday != idx) {
-        initial = initial.add(const Duration(days: 1));
-      }
+    final batasAwal = awal.subtract(const Duration(days: 365));
+    final batasAkhir = awal.add(const Duration(days: 730));
+
+    var initial = _tanggal ?? awal;
+
+    if (initial.isBefore(batasAwal)) {
+      initial = batasAwal;
+    } else if (initial.isAfter(batasAkhir)) {
+      initial = batasAkhir;
     }
 
-    final hasil = await showDatePicker(
+    final idx = _hari == null
+        ? null
+        : daftarHari.indexOf(_hari!) + 1;
+
+    final hasil = await showKalenderTanggal(
       context: context,
       initialDate: initial,
-      firstDate: awal.subtract(const Duration(days: 365)),
-      lastDate: awal.add(const Duration(days: 730)),
-      selectableDayPredicate: idx == null ? null : (d) => d.weekday == idx,
+      firstDate: batasAwal,
+      lastDate: batasAkhir,
+      weekday: idx,
     );
 
-    if (hasil == null) return;
+    if (hasil == null || !mounted) return;
 
     setState(() {
       _tanggal = hasil;
       _hari ??= namaHari(hasil);
+
       _error = Map.of(_error)
         ..remove('tanggal')
         ..remove('hari');
-    });
-  }
-
-  Future<void> _pilihJam({required bool mulai}) async {
-    final hasil = await showTimePicker(
-      context: context,
-      initialTime:
-          (mulai ? _mulai : _selesai) ?? const TimeOfDay(hour: 8, minute: 0),
-    );
-
-    if (hasil == null) return;
-
-    setState(() {
-      if (mulai) {
-        _mulai = hasil;
-      } else {
-        _selesai = hasil;
-      }
-      _error = Map.of(_error)
-        ..remove('mulai')
-        ..remove('selesai');
     });
   }
 
@@ -102,13 +127,22 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
     if (_mk.text.trim().isEmpty) {
       e['mk'] = 'Nama mata kuliah wajib diisi';
     }
+
     if (_hari == null) e['hari'] = 'Pilih hari';
     if (_tanggal == null) e['tanggal'] = 'Pilih tanggal';
-    if (_mulai == null) e['mulai'] = 'Pilih jam';
 
-    if (_selesai == null) {
-      e['selesai'] = 'Pilih jam';
-    } else if (_mulai != null && _menit(_selesai!) <= _menit(_mulai!)) {
+    if (_jamMulaiController.text.trim().isEmpty) {
+      e['mulai'] = 'Masukkan jam mulai';
+    } else if (_mulai == null) {
+      e['mulai'] = 'Gunakan format HH:mm (00:00–23:59)';
+    }
+
+    if (_jamSelesaiController.text.trim().isEmpty) {
+      e['selesai'] = 'Masukkan jam selesai';
+    } else if (_selesai == null) {
+      e['selesai'] = 'Gunakan format HH:mm (00:00–23:59)';
+    } else if (_mulai != null &&
+        _menit(_selesai!) <= _menit(_mulai!)) {
       e['selesai'] = 'Harus setelah jam mulai';
     }
 
@@ -205,15 +239,21 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                               nilai: _hari,
                               hint: 'Senin',
                               adaError: _error.containsKey('hari'),
-                              onChanged: (v) => setState(() {
-                                _hari = v;
-                                final idx = daftarHari.indexOf(v!) + 1;
-                                if (_tanggal != null &&
-                                    _tanggal!.weekday != idx) {
-                                  _tanggal = null;
-                                }
-                                _hapusError('hari');
-                              }),
+                              onChanged: (v) {
+                                setState(() {
+                                  _hari = v;
+                                  final idx =
+                                      daftarHari.indexOf(v!) + 1;
+
+                                  if (_tanggal != null &&
+                                      _tanggal!.weekday != idx) {
+                                    _tanggal = null;
+                                  }
+
+                                  _error = Map.of(_error)
+                                    ..remove('hari');
+                                });
+                              },
                             ),
                           ),
                         ),
@@ -243,12 +283,12 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                           child: _Kolom(
                             label: 'Jam Mulai',
                             error: _error['mulai'],
-                            child: _KotakPilih(
-                              teks: _mulai == null ? null : formatJam(_mulai!),
-                              hint: '08:00',
-                              icon: Icons.schedule_rounded,
+                            child: _InputJam(
+                              controller: _jamMulaiController,
                               adaError: _error.containsKey('mulai'),
-                              onTap: () => _pilihJam(mulai: true),
+                              onChanged: (value) {
+                                _ubahJam(value, mulai: true);
+                              },
                             ),
                           ),
                         ),
@@ -257,14 +297,12 @@ class _JadwalFormPageState extends State<JadwalFormPage> {
                           child: _Kolom(
                             label: 'Jam Selesai',
                             error: _error['selesai'],
-                            child: _KotakPilih(
-                              teks: _selesai == null
-                                  ? null
-                                  : formatJam(_selesai!),
-                              hint: '10:30',
-                              icon: Icons.schedule_rounded,
+                            child: _InputJam(
+                              controller: _jamSelesaiController,
                               adaError: _error.containsKey('selesai'),
-                              onTap: () => _pilihJam(mulai: false),
+                              onChanged: (value) {
+                                _ubahJam(value, mulai: false);
+                              },
                             ),
                           ),
                         ),
@@ -381,7 +419,9 @@ class _Kolom extends StatelessWidget {
 BoxDecoration _kotak(bool adaError) => BoxDecoration(
   color: MhsColors.fieldFill,
   borderRadius: BorderRadius.circular(10),
-  border: Border.all(color: adaError ? MhsColors.danger : MhsColors.fieldFill),
+  border: Border.all(
+    color: adaError ? MhsColors.danger : MhsColors.fieldFill,
+  ),
 );
 
 const TextStyle _isiStyle = TextStyle(
@@ -426,6 +466,46 @@ class _InputTeks extends StatelessWidget {
           border: InputBorder.none,
           hintText: hint,
           hintStyle: _hintStyle,
+        ),
+      ),
+    );
+  }
+}
+
+// Input jam manual dengan format HH:mm.
+class _InputJam extends StatelessWidget {
+  const _InputJam({
+    required this.controller,
+    required this.adaError,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final bool adaError;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: _kotak(adaError),
+      alignment: Alignment.center,
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.datetime,
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+          LengthLimitingTextInputFormatter(5),
+        ],
+        onChanged: onChanged,
+        style: _isiStyle,
+        decoration: const InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          hintText: '08:00',
+          hintStyle: _hintStyle,
+          counterText: '',
         ),
       ),
     );
