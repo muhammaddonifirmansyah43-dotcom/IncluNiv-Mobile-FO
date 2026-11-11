@@ -1,17 +1,26 @@
 
 import 'package:flutter/material.dart';
-import '../../../shared/models/pendamping_profile_store.dart';
 
-enum RegisterRole { pendamping, mahasiswa }
+import '../../../shared/models/pendamping_profile_store.dart';
+import '../../../shared/models/demo_auth_store.dart';
+import '../../mahasiswa/data/profil_store.dart';
+
+// JENIS AKTOR REGISTRASI
+enum RegisterRole {
+  pendamping,
+  mahasiswa,
+}
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback? onLogin;
   final VoidCallback? onBack;
+  final VoidCallback? onRegistered;
 
   const RegisterPage({
     super.key,
     this.onLogin,
     this.onBack,
+    this.onRegistered,
   });
 
   @override
@@ -19,6 +28,7 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // WARNA RESMI APLIKASI
   static const Color navy = Color(0xFF0F2D5B);
   static const Color blue = Color(0xFF0056B8);
   static const Color orange = Color(0xFFF97316);
@@ -27,6 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   RegisterRole selectedRole = RegisterRole.pendamping;
 
+  // CONTROLLER INPUT
   final _namaController = TextEditingController();
   final _nomorIndukController = TextEditingController();
   final _emailController = TextEditingController();
@@ -38,6 +49,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _konfirmasiController = TextEditingController();
 
+  // PENYIMPAN PESAN ERROR
   final Map<TextEditingController, String> _errors = {};
 
   bool _obscurePassword = true;
@@ -46,6 +58,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool get isPendamping =>
       selectedRole == RegisterRole.pendamping;
 
+  // MEMBERSIHKAN CONTROLLER
   @override
   void dispose() {
     _namaController.dispose();
@@ -61,7 +74,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // KEMBALI KE HALAMAN SEBELUMNYA
+  // NAVIGASI KEMBALI
   void _handleBack() {
     if (widget.onBack != null) {
       widget.onBack!();
@@ -71,6 +84,22 @@ class _RegisterPageState extends State<RegisterPage> {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
+  }
+
+  // NAVIGASI KE LOGIN
+  void _handleLogin() {
+    if (widget.onLogin != null) {
+      widget.onLogin!();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Halaman Login belum dihubungkan pada preview ini.',
+        ),
+      ),
+    );
   }
 
   // GANTI AKTOR REGISTRASI
@@ -87,7 +116,7 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
-  // VALIDASI MASING-MASING INPUT
+  // VALIDASI INPUT
   String? _validateInput(
     TextEditingController controller,
   ) {
@@ -107,6 +136,12 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     }
 
+    if (controller == _nomorIndukController) {
+      if (!RegExp(r'^\d+$').hasMatch(value)) {
+        return 'Harus berupa angka';
+      }
+    }
+
     if (controller == _passwordController &&
         controller.text.length < 8) {
       return 'Minimal 8 karakter';
@@ -120,7 +155,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return null;
   }
 
-  // TOMBOL DAFTAR DAN KONEKSI KE PROFIL
+  // TOMBOL DAFTAR
   void _submitForm() {
     FocusScope.of(context).unfocus();
 
@@ -130,18 +165,21 @@ class _RegisterPageState extends State<RegisterPage> {
       _emailController,
       _fakultasController,
       _teleponController,
+
       if (isPendamping)
         _keahlianController
       else ...[
         _disabilitasController,
         _dukunganController,
       ],
+
       _passwordController,
       _konfirmasiController,
     ];
 
     final newErrors = <TextEditingController, String>{};
 
+    // VALIDASI SEMUA KOLOM
     for (final controller in controllers) {
       final error = _validateInput(controller);
 
@@ -156,10 +194,12 @@ class _RegisterPageState extends State<RegisterPage> {
         ..addAll(newErrors);
     });
 
+    // JANGAN LANJUT JIKA ADA ERROR
     if (newErrors.isNotEmpty) return;
 
-    // SIMPAN DATA PENDAFTARAN PENDAMPING
-    // KE PENYIMPANAN PROFIL SEMENTARA.
+    // ========================================
+    // SIMPAN DATA PROFIL PENDAMPING
+    // ========================================
     if (isPendamping) {
       PendampingProfileStore.instance.saveRegistration(
         nama: _namaController.text.trim(),
@@ -171,18 +211,55 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     }
 
+    // ========================================
+    // SIMPAN DATA PROFIL MAHASISWA DIFABEL
+    // ========================================
+    if (!isPendamping) {
+      ProfilStore.instance.isiDariRegistrasi(
+        nama: _namaController.text.trim(),
+        nim: _nomorIndukController.text.trim(),
+        email: _emailController.text.trim(),
+        telepon: _teleponController.text.trim(),
+        prodi: _fakultasController.text.trim(),
+        disabilitas: _disabilitasController.text.trim(),
+      );
+    }
+
+    // ========================================
+    // SIMPAN AKUN DEMO UNTUK LOGIN
+    // ========================================
+    DemoAuthStore.instance.register(
+      nim: _nomorIndukController.text.trim(),
+      password: _passwordController.text,
+      role: isPendamping
+          ? 'Pendamping'
+          : 'Mahasiswa Disabilitas',
+    );
+
+    // ========================================
+    // NAVIGASI SETELAH REGISTRASI
+    // ========================================
+    if (widget.onRegistered != null) {
+      widget.onRegistered!();
+      return;
+    }
+
+    // UNTUK PREVIEW MANDIRI
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: navy,
         content: Text(
-          'Form registrasi '
+          'Registrasi '
           '${isPendamping ? "Pendamping" : "Mahasiswa Difabel"} '
-          'berhasil divalidasi.',
+          'berhasil. Silakan menuju halaman Login.',
         ),
       ),
     );
   }
 
+  // ========================================
+  // TAMPILAN HALAMAN REGISTER
+  // ========================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -250,6 +327,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           color: navy,
                         ),
                       ),
+
                       const Expanded(
                         child: Text(
                           'Registrasi',
@@ -260,16 +338,20 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                       ),
+
                       const SizedBox(width: 48),
                     ],
                   ),
                 ),
 
-                // KONTEN FORM
+                // FORM DAPAT DI-SCROLL
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(
-                      26, 12, 26, 20,
+                      26,
+                      12,
+                      26,
+                      20,
                     ),
                     child: Column(
                       crossAxisAlignment:
@@ -319,7 +401,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         // NOMOR INDUK
                         _field(
                           label: isPendamping
-                              ? 'Nomor Induk Mahasiswa (NIP)'
+                              ? 'Nomor Induk Mahasiswa (NIM)'
                               : 'Nomor Induk Mahasiswa (NIM)',
                           hint: 'Contoh: 2615502010000',
                           icon: Icons.badge_outlined,
@@ -327,7 +409,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           keyboardType: TextInputType.number,
                         ),
 
-                        // EMAIL
+                        // EMAIL MAHASISWA
                         _field(
                           label: 'Email Mahasiswa UB',
                           hint: 'nama_anda@student.ub.ac.id',
@@ -354,7 +436,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           keyboardType: TextInputType.phone,
                         ),
 
-                        // FIELD KHUSUS PENDAMPING
+                        // KHUSUS PENDAMPING
                         if (isPendamping)
                           _field(
                             label: 'Keahlian',
@@ -363,7 +445,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: _keahlianController,
                           )
 
-                        // FIELD KHUSUS MAHASISWA DIFABEL
+                        // KHUSUS MAHASISWA DIFABEL
                         else ...[
                           _field(
                             label: 'Jenis Disabilitas',
@@ -371,6 +453,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             icon: Icons.accessible_forward,
                             controller: _disabilitasController,
                           ),
+
                           _field(
                             label: 'Kebutuhan Dukungan',
                             hint: 'Masukkan Jenis Dukungan',
@@ -476,17 +559,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         SizedBox(
                           height: 40,
                           child: OutlinedButton(
-                            onPressed: widget.onLogin ??
-                                () {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Halaman login belum dihubungkan.',
-                                      ),
-                                    ),
-                                  );
-                                },
+                            onPressed: _handleLogin,
                             style: OutlinedButton.styleFrom(
                               backgroundColor: lightBlue,
                               foregroundColor: navy,
@@ -529,7 +602,9 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // TOMBOL PILIHAN AKTOR
+  // ========================================
+  // PILIHAN AKTOR
+  // ========================================
   Widget _roleSelector() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -538,7 +613,9 @@ class _RegisterPageState extends State<RegisterPage> {
           'Pendamping',
           RegisterRole.pendamping,
         ),
+
         const SizedBox(width: 7),
+
         _roleButton(
           'Mahasiswa\nDifabel',
           RegisterRole.mahasiswa,
@@ -561,8 +638,9 @@ class _RegisterPageState extends State<RegisterPage> {
           backgroundColor: selected
               ? orange
               : const Color(0xFFFFE1CB),
-          foregroundColor:
-              selected ? Colors.white : navy,
+          foregroundColor: selected
+              ? Colors.white
+              : navy,
           elevation: selected ? 2 : 0,
           padding: const EdgeInsets.symmetric(
             horizontal: 13,
@@ -584,8 +662,10 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ========================================
   // KOMPONEN INPUT
-  // ERROR TAMPIL DI SAMPING JUDUL
+  // ERROR DI SEBELAH KANAN JUDUL
+  // ========================================
   Widget _field({
     required String label,
     required String hint,
@@ -620,6 +700,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
               if (error != null) ...[
                 const SizedBox(width: 6),
+
                 Flexible(
                   child: Text(
                     error,
@@ -650,16 +731,23 @@ class _RegisterPageState extends State<RegisterPage> {
                 fontSize: 11,
                 color: navy,
               ),
-              onChanged: (_) {
-                if (_errors.containsKey(controller)) {
-                  setState(() {
-                    final newError =
-                        _validateInput(controller);
 
-                    if (newError == null) {
-                      _errors.remove(controller);
-                    } else {
-                      _errors[controller] = newError;
+              onChanged: (_) {
+                if (_errors.containsKey(controller) ||
+                    (controller == _passwordController &&
+                        _errors.containsKey(
+                          _konfirmasiController,
+                        ))) {
+                  setState(() {
+                    if (_errors.containsKey(controller)) {
+                      final newError =
+                          _validateInput(controller);
+
+                      if (newError == null) {
+                        _errors.remove(controller);
+                      } else {
+                        _errors[controller] = newError;
+                      }
                     }
 
                     if (controller ==
@@ -683,22 +771,27 @@ class _RegisterPageState extends State<RegisterPage> {
                   });
                 }
               },
+
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(
                   color: Color(0xFFB7BDCA),
                   fontSize: 10,
                 ),
+
                 prefixIcon: Icon(
                   icon,
                   size: 15,
                   color: const Color(0xFF8A91A0),
                 ),
+
                 suffixIcon: suffix,
+
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 10,
                 ),
+
                 filled: true,
                 fillColor: lightBlue,
 

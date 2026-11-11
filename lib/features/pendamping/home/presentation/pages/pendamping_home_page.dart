@@ -1,4 +1,8 @@
+
 import 'package:flutter/material.dart';
+
+import '../../../../../shared/models/pendamping_profile_store.dart';
+
 import '../../data/pendampingan_dummy.dart';
 import '../home_style.dart';
 import '../widgets/home_background.dart';
@@ -7,15 +11,21 @@ import '../widgets/ongoing_session_card.dart';
 import '../widgets/stat_card.dart';
 
 /// Halaman Beranda Pendamping.
-/// - Tidak membuat Drawer/sidebar (milik anggota lain).
-/// - Navigasi lewat callback; sambungkan ke routing tim saat sudah siap.
+///
+/// Integrasi:
+/// - Nama mengikuti PendampingProfileStore.
+/// - Sidebar menggunakan PendampingHomeShell.
+/// - Navigasi kartu menggunakan callback dari main.dart.
+/// - Tetap mendukung preview mandiri.
 class PendampingHomePage extends StatelessWidget {
-  /// Dipanggil saat ikon hamburger ditekan (sambungkan ke sidebar tim).
+  /// Callback tombol hamburger jika memakai AppBar sendiri.
   final VoidCallback? onMenuTap;
 
-  /// false jika halaman ini dipasang di dalam layout yang sudah punya AppBar.
+  /// Gunakan false jika dibungkus PendampingHomeShell
+  /// agar tidak muncul dua AppBar.
   final bool showAppBar;
 
+  // CALLBACK NAVIGASI
   final VoidCallback? onAkanDatangTap;
   final VoidCallback? onBerlangsungTap;
   final VoidCallback? onSelesaiTap;
@@ -35,54 +45,110 @@ class PendampingHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // DATA RIWAYAT PENDAMPINGAN
     final riwayat = PendampingHomeDummy.riwayat;
 
     return Scaffold(
       backgroundColor: HomeColors.white,
+
+      // APPBAR HANYA UNTUK PREVIEW MANDIRI
       appBar: showAppBar
           ? AppBar(
               backgroundColor: HomeColors.lightBlue,
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.menu, color: HomeColors.navy, size: 28),
+                icon: const Icon(
+                  Icons.menu,
+                  color: HomeColors.navy,
+                  size: 28,
+                ),
                 onPressed: onMenuTap,
               ),
             )
           : null,
+
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SafeArea(
             top: !showAppBar,
             bottom: false,
+
             child: SingleChildScrollView(
               child: ConstrainedBox(
-                // minimal setinggi layar, supaya gelembung bawah
-                // tetap di dasar layar walau konten pendek
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                // Menjaga tinggi halaman agar dekorasi
+                // background tetap mengikuti tinggi layar.
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+
                 child: Stack(
                   children: [
-                    const Positioned.fill(child: HomeBackground()),
+                    // BACKGROUND ASLI BERANDA
+                    const Positioned.fill(
+                      child: HomeBackground(),
+                    ),
+
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        24,
+                        20,
+                        32,
+                      ),
+
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
                         children: [
-                          Text('Halo, ${PendampingHomeDummy.namaPendamping}!',
-                              style: HomeText.greeting),
+                          // ==========================
+                          // SAPAAN PENDAMPING
+                          // ==========================
+                          AnimatedBuilder(
+                            animation:
+                                PendampingProfileStore.instance,
+                            builder: (context, _) {
+                              final nama =
+                                  PendampingProfileStore
+                                      .instance.nama.trim();
+
+                              final namaTampil = nama.isEmpty
+                                  ? PendampingHomeDummy
+                                      .namaPendamping
+                                  : nama;
+
+                              return Text(
+                                'Halo, $namaTampil!',
+                                style: HomeText.greeting,
+                              );
+                            },
+                          ),
+
                           const SizedBox(height: 6),
+
                           Text(
                             'Kamu telah berkomitmen dalam ketersediaan sebagai '
                             'pendamping mahasiswa difabel yang dinaungi oleh '
                             'Pusat Layanan Disabilitas (PLD).',
                             style: HomeText.body,
                           ),
+
                           const SizedBox(height: 24),
-                          Text('Riwayat Pendampingan',
-                              style: HomeText.sectionTitle),
+
+                          // ==========================
+                          // RIWAYAT PENDAMPINGAN
+                          // ==========================
+                          Text(
+                            'Riwayat Pendampingan',
+                            style: HomeText.sectionTitle,
+                          ),
+
                           const SizedBox(height: 12),
+
                           Row(
                             children: [
+                              // AKAN DATANG
                               Expanded(
                                 child: StatCard(
                                   icon: Icons.event_available,
@@ -90,13 +156,17 @@ class PendampingHomePage extends StatelessWidget {
                                   label: 'Akan Datang',
                                   background: HomeColors.white,
                                   iconColor: HomeColors.blue,
-                                  iconBackground: HomeColors.lightBlue,
+                                  iconBackground:
+                                      HomeColors.lightBlue,
                                   textColor: HomeColors.navy,
                                   countColor: HomeColors.blue,
                                   onTap: onAkanDatangTap,
                                 ),
                               ),
+
                               const SizedBox(width: 12),
+
+                              // BERLANGSUNG
                               Expanded(
                                 child: StatCard(
                                   icon: Icons.play_arrow_rounded,
@@ -112,7 +182,10 @@ class PendampingHomePage extends StatelessWidget {
                                   onTap: onBerlangsungTap,
                                 ),
                               ),
+
                               const SizedBox(width: 12),
+
+                              // SELESAI
                               Expanded(
                                 child: StatCard(
                                   icon: Icons.check_circle_outline,
@@ -129,20 +202,40 @@ class PendampingHomePage extends StatelessWidget {
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 28),
-                          Text('Pendampingan Sedang Berlangsung',
-                              style:
-                                  HomeText.sectionTitle.copyWith(fontSize: 16)),
+
+                          // ==========================
+                          // PENDAMPINGAN BERLANGSUNG
+                          // ==========================
+                          Text(
+                            'Pendampingan Sedang Berlangsung',
+                            style: HomeText.sectionTitle.copyWith(
+                              fontSize: 16,
+                            ),
+                          ),
+
                           const SizedBox(height: 14),
+
                           OngoingSessionCard(
                             item: PendampingHomeDummy.berlangsung,
                             onDetailTap: onOngoingDetailTap,
                           ),
+
                           const SizedBox(height: 28),
-                          Text('Pendampingan Selanjutnya',
-                              style:
-                                  HomeText.sectionTitle.copyWith(fontSize: 16)),
+
+                          // ==========================
+                          // PENDAMPINGAN SELANJUTNYA
+                          // ==========================
+                          Text(
+                            'Pendampingan Selanjutnya',
+                            style: HomeText.sectionTitle.copyWith(
+                              fontSize: 16,
+                            ),
+                          ),
+
                           const SizedBox(height: 14),
+
                           NextSessionCard(
                             item: PendampingHomeDummy.selanjutnya,
                             onDetailTap: onNextDetailTap,

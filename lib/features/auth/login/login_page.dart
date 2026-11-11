@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/app_illustration.dart';
+import '../../../shared/models/demo_auth_store.dart';
+import '../register/register_page.dart';
+
+// =============================================
+// WARNA APLIKASI
+// =============================================
 
 class _AuthColors {
   static const navy = Color(0xFF0F2D5B);
@@ -12,11 +18,16 @@ class _AuthColors {
   static const red = Color(0xFFE53935);
 }
 
-// BACKGROUND BERSAMA LOGIN DAN LUPA SANDI
+// =============================================
+// BACKGROUND LOGIN DAN LUPA KATA SANDI
+// =============================================
+
 class _AuthBackground extends StatelessWidget {
   final Widget child;
 
-  const _AuthBackground({required this.child});
+  const _AuthBackground({
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +43,7 @@ class _AuthBackground extends StatelessWidget {
               const Color(0xFFDCE8FF),
             ),
           ),
+
           Positioned(
             top: 35,
             right: -45,
@@ -40,6 +52,7 @@ class _AuthBackground extends StatelessWidget {
               const Color(0xFFFFE7D6),
             ),
           ),
+
           Positioned(
             top: 220,
             left: -55,
@@ -55,6 +68,7 @@ class _AuthBackground extends StatelessWidget {
               ),
             ),
           ),
+
           Positioned(
             top: 285,
             right: 29,
@@ -63,6 +77,7 @@ class _AuthBackground extends StatelessWidget {
               _AuthColors.input,
             ),
           ),
+
           Positioned(
             bottom: -60,
             right: -42,
@@ -71,6 +86,7 @@ class _AuthBackground extends StatelessWidget {
               const Color(0xFFDCE8FF),
             ),
           ),
+
           Positioned(
             bottom: -84,
             left: -45,
@@ -86,6 +102,7 @@ class _AuthBackground extends StatelessWidget {
               ),
             ),
           ),
+
           SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -113,7 +130,10 @@ class _AuthBackground extends StatelessWidget {
   }
 }
 
-// LOGO DAN ILUSTRASI YANG SUDAH DIBUAT LUKI
+// =============================================
+// LOGO DAN ILUSTRASI GLOBAL
+// =============================================
+
 class _AuthBrand extends StatelessWidget {
   const _AuthBrand();
 
@@ -129,7 +149,9 @@ class _AuthBrand extends StatelessWidget {
   }
 }
 
-// ================= LOGIN =================
+// =============================================
+// HALAMAN LOGIN
+// =============================================
 
 class LoginPage extends StatefulWidget {
   final VoidCallback? onRegister;
@@ -156,17 +178,16 @@ class _LoginPageState extends State<LoginPage> {
   String? _passwordError;
   String? _loginError;
 
-  // Akun khusus simulasi frontend.
-  // BUKAN autentikasi backend sungguhan.
-  static const demoNim = '2315407011111';
-  static const demoPassword = 'Demo12345';
-
   @override
   void dispose() {
     _nimController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
+  // =========================================
+  // VALIDASI DAN PROSES LOGIN
+  // =========================================
 
   void _login(String role) {
     FocusScope.of(context).unfocus();
@@ -181,35 +202,78 @@ class _LoginPageState extends State<LoginPage> {
               ? 'NIM harus berupa angka'
               : null;
 
-      _passwordError =
-          password.isEmpty ? 'Wajib diisi' : null;
+      _passwordError = password.isEmpty
+          ? 'Wajib diisi'
+          : null;
 
       _loginError = null;
     });
 
-    if (_nimError != null || _passwordError != null) {
+    if (_nimError != null ||
+        _passwordError != null) {
       return;
     }
 
-    if (nim != demoNim || password != demoPassword) {
+    // MEMERIKSA AKUN DARI REGISTER
+    final isValid = DemoAuthStore.instance.canLogin(
+      nim,
+      password,
+      role,
+    );
+
+    if (!isValid) {
       setState(() {
         _loginError = 'Username atau password salah';
       });
       return;
     }
 
+    // JIKA DIGUNAKAN MELALUI MAIN.DART
+    // CALLBACK MENGARAHKAN KE BERANDA AKTOR
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!(role);
+      return;
+    }
+
+    // JIKA DIJALANKAN VIA PREVIEW LOGIN
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: _AuthColors.navy,
         content: Text(
-          'Simulasi masuk sebagai $role berhasil. '
-          'Backend belum terhubung.',
+          'Simulasi login sebagai $role berhasil. '
+          'Beranda belum dihubungkan pada preview ini.',
         ),
       ),
     );
-
-    widget.onLoginSuccess?.call(role);
   }
+
+  // =========================================
+  // NAVIGASI KE REGISTER
+  // =========================================
+
+  void _openRegister() {
+    if (widget.onRegister != null) {
+      widget.onRegister!();
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (registerContext) => RegisterPage(
+          onLogin: () {
+            Navigator.of(registerContext).pop();
+          },
+          onRegistered: () {
+            Navigator.of(registerContext).pop();
+          },
+        ),
+      ),
+    );
+  }
+
+  // =========================================
+  // NAVIGASI KE LUPA KATA SANDI
+  // =========================================
 
   void _openForgotPassword() {
     Navigator.of(context).push(
@@ -218,6 +282,10 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+  // =========================================
+  // KOMPONEN INPUT LOGIN
+  // =========================================
 
   Widget _input({
     required String label,
@@ -247,6 +315,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
+
             if (hasError)
               Flexible(
                 child: Text(
@@ -261,7 +330,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
           ],
         ),
+
         const SizedBox(height: 7),
+
         SizedBox(
           height: 47,
           child: TextField(
@@ -279,32 +350,43 @@ class _LoginPageState extends State<LoginPage> {
                 color: Color(0xFFADB6C8),
                 fontSize: 11,
               ),
+
               prefixIcon: Icon(
                 icon,
                 color: _AuthColors.blue,
                 size: 19,
               ),
+
               suffixIcon: suffix,
+
               filled: true,
               fillColor: _AuthColors.input,
-              contentPadding: const EdgeInsets.symmetric(
+
+              contentPadding:
+                  const EdgeInsets.symmetric(
                 vertical: 12,
                 horizontal: 10,
               ),
+
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius:
+                    BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
+
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius:
+                    BorderRadius.circular(10),
                 borderSide: BorderSide(
                   color: hasError
                       ? _AuthColors.red
                       : const Color(0xFFD9DDEB),
                 ),
               ),
+
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius:
+                    BorderRadius.circular(10),
                 borderSide: BorderSide(
                   color: hasError
                       ? _AuthColors.red
@@ -319,6 +401,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // =========================================
+  // TOMBOL LOGIN SESUAI AKTOR
+  // =========================================
+
   Widget _loginButton({
     required String label,
     required IconData icon,
@@ -330,7 +416,8 @@ class _LoginPageState extends State<LoginPage> {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0057BF),
+          backgroundColor:
+              const Color(0xFF0057BF),
           foregroundColor: Colors.white,
           elevation: 1,
           padding: const EdgeInsets.symmetric(
@@ -351,6 +438,7 @@ class _LoginPageState extends State<LoginPage> {
                 size: 17,
               ),
             ),
+
             Expanded(
               child: Text(
                 label,
@@ -361,12 +449,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
+
             const SizedBox(width: 28),
           ],
         ),
       ),
     );
   }
+
+  // =========================================
+  // TAMPILAN LOGIN
+  // =========================================
 
   @override
   Widget build(BuildContext context) {
@@ -375,14 +468,21 @@ class _LoginPageState extends State<LoginPage> {
 
     return _AuthBackground(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(35, 0, 35, 35),
+        padding: const EdgeInsets.fromLTRB(
+          35, 0, 35, 35,
+        ),
         children: [
-          SizedBox(height: compact ? 20 : 100),
+          SizedBox(
+            height: compact ? 20 : 100,
+          ),
 
           const _AuthBrand(),
 
-          SizedBox(height: compact ? 14 : 22),
+          SizedBox(
+            height: compact ? 14 : 22,
+          ),
 
+          // INPUT NIM
           _input(
             label: 'NIM (Nomor Induk Mahasiswa)',
             hint: 'Contoh: 215150200111001',
@@ -400,6 +500,7 @@ class _LoginPageState extends State<LoginPage> {
 
           const SizedBox(height: 18),
 
+          // INPUT PASSWORD
           _input(
             label: 'Password / Kata Sandi',
             hint: 'Masukkan kata sandi akun',
@@ -413,6 +514,7 @@ class _LoginPageState extends State<LoginPage> {
                 _loginError = null;
               });
             },
+
             suffix: IconButton(
               tooltip: _obscurePassword
                   ? 'Tampilkan kata sandi'
@@ -426,13 +528,15 @@ class _LoginPageState extends State<LoginPage> {
               ),
               onPressed: () {
                 setState(() {
-                  _obscurePassword = !_obscurePassword;
+                  _obscurePassword =
+                      !_obscurePassword;
                 });
               },
             ),
           ),
 
-          // Ruang tetap untuk pesan error login
+          // PESAN LOGIN SALAH
+          // RUANG TETAP AGAR FORM TIDAK BERGESER
           SizedBox(
             height: 24,
             child: _loginError == null
@@ -458,6 +562,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
           ),
 
+          // INGAT SAYA DAN LUPA PASSWORD
           Row(
             children: [
               SizedBox(
@@ -473,7 +578,9 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
               ),
+
               const SizedBox(width: 4),
+
               const Expanded(
                 child: Text(
                   'Ingat Saya',
@@ -483,6 +590,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+
               TextButton(
                 onPressed: _openForgotPassword,
                 child: const Text(
@@ -499,19 +607,25 @@ class _LoginPageState extends State<LoginPage> {
 
           const SizedBox(height: 12),
 
+          // LOGIN MAHASISWA DIFABEL
           _loginButton(
-            label: 'Masuk sebagai Mahasiswa Disabilitas',
+            label:
+                'Masuk sebagai Mahasiswa Disabilitas',
             icon: Icons.accessible_forward,
-            onPressed: () =>
-                _login('Mahasiswa Disabilitas'),
+            onPressed: () {
+              _login('Mahasiswa Disabilitas');
+            },
           ),
 
           const SizedBox(height: 13),
 
+          // LOGIN PENDAMPING
           _loginButton(
             label: 'Masuk sebagai Pendamping',
             icon: Icons.support_agent_outlined,
-            onPressed: () => _login('Pendamping'),
+            onPressed: () {
+              _login('Pendamping');
+            },
           ),
 
           const SizedBox(height: 26),
@@ -523,6 +637,7 @@ class _LoginPageState extends State<LoginPage> {
                   color: Color(0xFFE3E8F2),
                 ),
               ),
+
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: 14,
@@ -535,6 +650,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+
               Expanded(
                 child: Divider(
                   color: Color(0xFFE3E8F2),
@@ -545,8 +661,10 @@ class _LoginPageState extends State<LoginPage> {
 
           const SizedBox(height: 15),
 
+          // TOMBOL KE REGISTER
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+                MainAxisAlignment.center,
             children: [
               const Text(
                 'Belum memiliki akun? ',
@@ -555,21 +673,9 @@ class _LoginPageState extends State<LoginPage> {
                   fontSize: 11,
                 ),
               ),
+
               GestureDetector(
-                onTap: () {
-                  if (widget.onRegister != null) {
-                    widget.onRegister!();
-                  } else {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Hubungkan tombol ke halaman Register.',
-                        ),
-                      ),
-                    );
-                  }
-                },
+                onTap: _openRegister,
                 child: const Text(
                   'Registrasi',
                   style: TextStyle(
@@ -587,10 +693,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// ================= LUPA KATA SANDI =================
+// =============================================
+// HALAMAN LUPA KATA SANDI
+// =============================================
 
 class ForgotPasswordPage extends StatefulWidget {
-  const ForgotPasswordPage({super.key});
+  const ForgotPasswordPage({
+    super.key,
+  });
 
   @override
   State<ForgotPasswordPage> createState() =>
@@ -600,6 +710,7 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState
     extends State<ForgotPasswordPage> {
   final _emailController = TextEditingController();
+
   String? _emailError;
 
   @override
@@ -608,6 +719,7 @@ class _ForgotPasswordPageState
     super.dispose();
   }
 
+  // VALIDASI EMAIL DAN POPUP RESET
   void _submitReset() {
     final email = _emailController.text.trim();
 
@@ -625,6 +737,8 @@ class _ForgotPasswordPageState
 
     if (_emailError != null) return;
 
+    // POPUP SIMULASI RESET PASSWORD
+    // BELUM MENGIRIM EMAIL SUNGGUHAN
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -632,7 +746,8 @@ class _ForgotPasswordPageState
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(13),
+            borderRadius:
+                BorderRadius.circular(13),
           ),
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 28,
@@ -646,14 +761,17 @@ class _ForgotPasswordPageState
               children: [
                 const CircleAvatar(
                   radius: 34,
-                  backgroundColor: Color(0xFF18C51B),
+                  backgroundColor:
+                      Color(0xFF18C51B),
                   child: Icon(
                     Icons.check,
                     color: Colors.white,
                     size: 47,
                   ),
                 ),
+
                 const SizedBox(height: 18),
+
                 const Text(
                   'Tautan reset terkirim',
                   textAlign: TextAlign.center,
@@ -663,7 +781,9 @@ class _ForgotPasswordPageState
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 const SizedBox(height: 9),
+
                 const Text(
                   'Silakan periksa email Anda dan klik '
                   'tautan yang kami kirim untuk '
@@ -675,7 +795,9 @@ class _ForgotPasswordPageState
                     height: 1.5,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 const Text(
                   'Mode demo: email belum benar-benar dikirim.',
                   textAlign: TextAlign.center,
@@ -684,14 +806,24 @@ class _ForgotPasswordPageState
                     color: Colors.grey,
                   ),
                 ),
+
                 const SizedBox(height: 19),
+
                 SizedBox(
                   width: double.infinity,
                   height: 45,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(dialogContext);
-                      Navigator.pop(context);
+                      // TUTUP POPUP
+                      Navigator.of(
+                        dialogContext,
+                      ).pop();
+
+                      // KEMBALI KE LOGIN
+                      if (mounted &&
+                          Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
@@ -719,9 +851,11 @@ class _ForgotPasswordPageState
     );
   }
 
+  // TAMPILAN LUPA KATA SANDI
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).height < 690;
+    final compact =
+        MediaQuery.sizeOf(context).height < 690;
 
     return _AuthBackground(
       child: ListView(
@@ -729,9 +863,15 @@ class _ForgotPasswordPageState
           35, 0, 35, 35,
         ),
         children: [
-          SizedBox(height: compact ? 20 : 100),
+          SizedBox(
+            height: compact ? 20 : 100,
+          ),
+
           const _AuthBrand(),
-          SizedBox(height: compact ? 24 : 54),
+
+          SizedBox(
+            height: compact ? 24 : 54,
+          ),
 
           const Text(
             'Lupa kata sandi?',
@@ -758,6 +898,7 @@ class _ForgotPasswordPageState
 
           const SizedBox(height: 44),
 
+          // LABEL DAN ERROR EMAIL
           Row(
             children: [
               const Expanded(
@@ -770,6 +911,7 @@ class _ForgotPasswordPageState
                   ),
                 ),
               ),
+
               if (_emailError != null)
                 Text(
                   _emailError!,
@@ -783,11 +925,13 @@ class _ForgotPasswordPageState
 
           const SizedBox(height: 8),
 
+          // INPUT EMAIL
           SizedBox(
             height: 47,
             child: TextField(
               controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
+              keyboardType:
+                  TextInputType.emailAddress,
               onChanged: (_) {
                 if (_emailError != null) {
                   setState(() {
@@ -795,23 +939,30 @@ class _ForgotPasswordPageState
                   });
                 }
               },
+
               decoration: InputDecoration(
-                hintText: 'nama_anda@student.ub.ac.id',
+                hintText:
+                    'nama_anda@student.ub.ac.id',
+
                 hintStyle: const TextStyle(
                   color: Color(0xFFADB6C8),
                   fontSize: 11,
                 ),
+
                 prefixIcon: const Icon(
                   Icons.alternate_email,
                   color: _AuthColors.blue,
                   size: 19,
                 ),
+
                 filled: true,
                 fillColor: _AuthColors.input,
+
                 contentPadding:
                     const EdgeInsets.symmetric(
                   vertical: 12,
                 ),
+
                 enabledBorder: OutlineInputBorder(
                   borderRadius:
                       BorderRadius.circular(10),
@@ -821,6 +972,7 @@ class _ForgotPasswordPageState
                         : _AuthColors.red,
                   ),
                 ),
+
                 focusedBorder: OutlineInputBorder(
                   borderRadius:
                       BorderRadius.circular(10),
@@ -834,6 +986,7 @@ class _ForgotPasswordPageState
 
           const SizedBox(height: 22),
 
+          // TOMBOL LANJUTKAN
           SizedBox(
             height: 45,
             child: ElevatedButton(
