@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../controller/jadwal_controller.dart';
 import '../../data/jadwal_dummy.dart';
+import '../../../home/presentation/widgets/home_empty_state.dart';
 import '../jadwal_style.dart';
 import '../widgets/ajukan_perizinan_dialog.dart';
-import '../widgets/empty_state.dart';
 import '../widgets/jadwal_app_bar.dart';
 import '../widgets/jadwal_card.dart';
 import '../widgets/status_tab_bar.dart';
@@ -131,7 +131,10 @@ class _JadwalPendampinganPageState extends State<JadwalPendampinganPage> {
                 ),
                 const SizedBox(height: 24),
                 if (items.isEmpty)
-                  const EmptyState()
+                  const Padding(
+                    padding: EdgeInsets.only(top: 36),
+                    child: HomeEmptyState(),
+                  )
                 else
                   for (final item in items) ...[
                     JadwalCard(

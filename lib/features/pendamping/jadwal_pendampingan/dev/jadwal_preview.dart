@@ -24,6 +24,8 @@ class _JadwalPreviewApp extends StatelessWidget {
           }
 
           return PendampingHomePage(
+            // true = beranda tampil terisi (kartu bisa dibandingkan dengan Figma)
+            initialHasJadwal: true,
             onAkanDatangTap: () => open(JadwalStatus.akanDatang),
             onBerlangsungTap: () => open(JadwalStatus.berlangsung),
             onSelesaiTap: () => open(JadwalStatus.selesai),

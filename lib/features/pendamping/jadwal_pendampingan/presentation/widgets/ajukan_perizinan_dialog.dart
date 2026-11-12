@@ -91,7 +91,7 @@ class _AjukanPerizinanDialogState extends State<AjukanPerizinanDialog> {
   Widget _reasonField() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
         color: JadwalColors.white,
         borderRadius: BorderRadius.circular(12),
@@ -99,25 +99,35 @@ class _AjukanPerizinanDialogState extends State<AjukanPerizinanDialog> {
             ? Border.all(color: const Color(0xFFDC2626), width: 1)
             : null,
       ),
-      child: TextField(
-        controller: _reasonController,
-        minLines: 3,
-        maxLines: 5,
-        textCapitalization: TextCapitalization.sentences,
-        style: JadwalText.infoRow,
-        onChanged: (_) {
-          if (_showError) setState(() => _showError = false);
-        },
-        decoration: InputDecoration(
-          isDense: true,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          labelText: 'Tulis Alasan',
-          floatingLabelBehavior: FloatingLabelBehavior.always,
-          alignLabelWithHint: true,
-          labelStyle: JadwalText.disability
-              .copyWith(fontWeight: FontWeight.w600),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tulis Alasan',
+            style: JadwalText.disability
+                .copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _reasonController,
+            minLines: 3,
+            maxLines: 5,
+            keyboardType: TextInputType.multiline,
+            textCapitalization: TextCapitalization.sentences,
+            cursorColor: JadwalColors.navy,
+            style: JadwalText.infoRow,
+            onChanged: (_) {
+              if (_showError) setState(() => _showError = false);
+            },
+            decoration: const InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
       ),
     );
   }

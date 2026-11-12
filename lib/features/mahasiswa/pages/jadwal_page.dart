@@ -167,7 +167,7 @@ class _TabChip extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: aktif
-                  ? _biruAktif.withOpacity(.35)
+                  ? _biruAktif.withValues(alpha: .35)
                   : const Color(0x260F2D5B),
               blurRadius: 8,
               offset: const Offset(0, 3),

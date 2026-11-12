@@ -42,7 +42,8 @@ class HomeText {
 }
 
 BoxShadow get homeCardShadow => BoxShadow(
-      color: HomeColors.navy.withAlpha(46),
-      blurRadius: 10,
-      offset: const Offset(0, 4),
+      color: HomeColors.navy.withAlpha(70),
+      blurRadius: 14,
+      spreadRadius: 0,
+      offset: const Offset(0, 5),
     );

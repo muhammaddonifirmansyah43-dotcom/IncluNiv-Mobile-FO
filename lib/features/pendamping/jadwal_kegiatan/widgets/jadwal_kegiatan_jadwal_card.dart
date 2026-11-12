@@ -10,83 +10,92 @@ class JkJadwalCard extends StatelessWidget {
   final JadwalKegiatan jadwal;
   final VoidCallback? onTap;
 
+  // Palet resmi (dipakai langsung agar tidak bergantung isi JkColors).
+  static const Color _navy = Color(0xFF0F2D5B);
+  static const Color _blue = Color(0xFF3B82F6);
+  static const Color _lightBlue = Color(0xFFE6F0FF);
+
+  static final BoxShadow _shadow = BoxShadow(
+    color: _navy.withAlpha(46),
+    blurRadius: 10,
+    offset: const Offset(0, 4),
+  );
+
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF1F5FB),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+    return Container(
+      decoration: BoxDecoration(
+        color: _lightBlue,
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: JkColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: JkColors.shadow,
-                blurRadius: 8,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
-                child: Row(
+        boxShadow: [_shadow],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    const Icon(
-                      Icons.menu_book_outlined,
-                      size: 22,
-                      color: JkColors.navy,
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _blue.withAlpha(46),
+                      ),
+                      child: const Icon(
+                        Icons.menu_book_outlined,
+                        size: 24,
+                        color: _blue,
+                      ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         jadwal.mataKuliah,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: JkColors.navy,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: _navy,
+                          height: 1.2,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: JkColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: JkColors.shadow,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  decoration: BoxDecoration(
+                    color: JkColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [_shadow],
+                  ),
+                  child: Column(
+                    children: [
+                      _Baris(
+                          label: 'Hari, Tanggal',
+                          nilai: jadwal.hariTanggalLabel),
+                      const SizedBox(height: 12),
+                      _Baris(label: 'Waktu', nilai: jadwal.waktuLabel),
+                      const SizedBox(height: 12),
+                      _Baris(label: 'Gedung', nilai: jadwal.gedung),
+                      const SizedBox(height: 12),
+                      _Baris(label: 'Ruang', nilai: jadwal.ruangan),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _Baris(label: 'Hari, Tanggal', nilai: jadwal.hariTanggalLabel),
-                    const SizedBox(height: 8),
-                    _Baris(label: 'Waktu', nilai: jadwal.waktuLabel),
-                    const SizedBox(height: 8),
-                    _Baris(label: 'Gedung', nilai: jadwal.gedung),
-                    const SizedBox(height: 8),
-                    _Baris(label: 'Ruang', nilai: jadwal.ruangan),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -102,19 +111,26 @@ class _Baris extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const gaya = TextStyle(fontSize: 12, color: JkColors.navy, height: 1.3);
+    const gaya = TextStyle(
+      fontSize: 14,
+      color: Color(0xFF334155),
+      height: 1.3,
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 92,
+          width: 108,
           child: Text(
             label,
-            style: gaya.copyWith(fontWeight: FontWeight.w800),
+            style: gaya.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F2D5B),
+            ),
           ),
         ),
-        const Text(':  ', style: gaya),
+        const Text(': ', style: gaya),
         Expanded(child: Text(nilai, style: gaya)),
       ],
     );

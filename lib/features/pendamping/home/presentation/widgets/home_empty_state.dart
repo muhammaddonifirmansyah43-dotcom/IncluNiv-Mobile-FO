@@ -1,42 +1,34 @@
 import 'package:flutter/material.dart';
-import '../jadwal_style.dart';
+import '../home_style.dart';
 
-class EmptyState extends StatelessWidget {
-  final String title;
-  final String message;
+class HomeEmptyState extends StatelessWidget {
+  const HomeEmptyState({super.key});
 
-  const EmptyState({
-    super.key,
-    this.title = 'Jadwal tidak tersedia',
-    this.message = 'Belum ada jadwal pendampingan pada kategori ini. '
-        'Silakan tambahkan jadwal baru untuk memulai sesi pendampingan.',
-  });
+  static const Color _slate = Color(0xFF64748B);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 36),
-      child: Column(
-        children: [
-          const _Illustration(),
-          const SizedBox(height: 4),
-          Text(
-            title,
+    return Column(
+      children: [
+        const _Illustration(),
+        const SizedBox(height: 4),
+        Text(
+          'Jadwal tidak tersedia',
+          textAlign: TextAlign.center,
+          style: HomeText.greeting
+              .copyWith(fontSize: 20, color: HomeColors.orange),
+        ),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Belum ada jadwal pendampingan pada kategori ini. '
+            'Silakan tambahkan jadwal baru untuk memulai sesi pendampingan.',
             textAlign: TextAlign.center,
-            style: JadwalText.title.copyWith(
-                fontSize: 20, color: JadwalColors.orange),
+            style: HomeText.body.copyWith(fontSize: 13, color: _slate),
           ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: JadwalText.subtitle.copyWith(fontSize: 13),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -70,7 +62,6 @@ class _Illustration extends StatelessWidget {
       height: 220,
       child: Stack(
         children: [
-          // gelembung latar
           Positioned(
             left: 10,
             top: 10,
@@ -95,7 +86,6 @@ class _Illustration extends StatelessWidget {
               ),
             ),
           ),
-          // bayangan di bawah kalender
           Positioned(
             left: 36,
             right: 36,
@@ -103,18 +93,17 @@ class _Illustration extends StatelessWidget {
             child: Container(
               height: 20,
               decoration: BoxDecoration(
-                color: JadwalColors.blue.withAlpha(30),
+                color: HomeColors.blue.withAlpha(30),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: JadwalColors.blue.withAlpha(40),
+                    color: HomeColors.blue.withAlpha(40),
                     blurRadius: 14,
                   ),
                 ],
               ),
             ),
           ),
-          // badan kalender (oranye) + isi putih
           Positioned(
             left: 50,
             top: 28,
@@ -123,12 +112,12 @@ class _Illustration extends StatelessWidget {
               height: 150,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: JadwalColors.orange,
+                color: HomeColors.orange,
                 borderRadius: BorderRadius.circular(22),
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: JadwalColors.white,
+                  color: HomeColors.white,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
@@ -153,7 +142,6 @@ class _Illustration extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      // mulut sedih
                       Container(
                         width: 28,
                         height: 12,
@@ -172,10 +160,8 @@ class _Illustration extends StatelessWidget {
               ),
             ),
           ),
-          // cincin kalender
           Positioned(left: 78, top: 18, child: _ring()),
           Positioned(left: 143, top: 18, child: _ring()),
-          // hiasan
           const Positioned(
             left: 158,
             top: 62,
@@ -189,12 +175,11 @@ class _Illustration extends StatelessWidget {
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: JadwalColors.orange.withAlpha(120),
+                color: HomeColors.orange.withAlpha(120),
                 shape: BoxShape.circle,
               ),
             ),
           ),
-          // lencana peringatan
           Positioned(
             right: 58,
             bottom: 20,
@@ -204,11 +189,11 @@ class _Illustration extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFFB923C),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: JadwalColors.white, width: 3),
-                boxShadow: [jadwalShadow],
+                border: Border.all(color: HomeColors.white, width: 3),
+                boxShadow: [homeCardShadow],
               ),
               child: const Icon(Icons.warning_amber_rounded,
-                  size: 26, color: JadwalColors.white),
+                  size: 26, color: HomeColors.white),
             ),
           ),
         ],

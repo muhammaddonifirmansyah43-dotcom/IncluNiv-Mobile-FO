@@ -91,7 +91,7 @@ class _TabChip extends StatelessWidget {
                 Icon(data.icon, size: 18, color: iconColor),
                 const SizedBox(width: 5),
                 Text('${data.label} ($countText)',
-                style: JadwalText.tab(fg)),
+                    style: JadwalText.tab(fg)),
               ],
             ),
           ),

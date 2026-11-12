@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
 import '../../data/pendampingan_dummy.dart';
 import '../home_style.dart';
+import '../widgets/home_app_bar.dart';
 import '../widgets/home_background.dart';
+import '../widgets/home_empty_state.dart';
+import '../widgets/jadwal_perkuliahan_button.dart';
 import '../widgets/next_session_card.dart';
 import '../widgets/ongoing_session_card.dart';
 import '../widgets/stat_card.dart';
 
 /// Halaman Beranda Pendamping.
+/// - Kondisi kosong (belum isi jadwal): angka "-", tombol Jadwal
+///   Perkuliahan, dan ilustrasi "Jadwal tidak tersedia".
+/// - Kondisi terisi: riwayat + kartu pendampingan.
 /// - Tidak membuat Drawer/sidebar (milik anggota lain).
-/// - Navigasi lewat callback; sambungkan ke routing tim saat sudah siap.
-class PendampingHomePage extends StatelessWidget {
+class PendampingHomePage extends StatefulWidget {
   /// Dipanggil saat ikon hamburger ditekan (sambungkan ke sidebar tim).
   final VoidCallback? onMenuTap;
 
   /// false jika halaman ini dipasang di dalam layout yang sudah punya AppBar.
   final bool showAppBar;
+
+  /// Kondisi awal. false = baru login, jadwal belum diisi.
+  final bool initialHasJadwal;
+
+  /// Dipanggil saat "Jadwal Perkuliahan" ditekan. Harus membuka halaman
+  /// jadwal kegiatan dan mengembalikan `true` jika jadwal sudah terisi.
+  final Future<bool?> Function(BuildContext context)? onJadwalPerkuliahanTap;
 
   final VoidCallback? onAkanDatangTap;
   final VoidCallback? onBerlangsungTap;
@@ -26,6 +38,8 @@ class PendampingHomePage extends StatelessWidget {
     super.key,
     this.onMenuTap,
     this.showAppBar = true,
+    this.initialHasJadwal = false,
+    this.onJadwalPerkuliahanTap,
     this.onAkanDatangTap,
     this.onBerlangsungTap,
     this.onSelesaiTap,
@@ -34,31 +48,45 @@ class PendampingHomePage extends StatelessWidget {
   });
 
   @override
+  State<PendampingHomePage> createState() => _PendampingHomePageState();
+}
+
+class _PendampingHomePageState extends State<PendampingHomePage> {
+  late bool _hasJadwal = widget.initialHasJadwal;
+
+  Future<void> _openJadwal() async {
+    final open = widget.onJadwalPerkuliahanTap;
+    if (open == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Halaman jadwal belum terhubung'),
+        ));
+      return;
+    }
+    final filled = await open(context);
+    if (filled == true && mounted) {
+      setState(() => _hasJadwal = true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final riwayat = PendampingHomeDummy.riwayat;
+    final filled = _hasJadwal;
 
     return Scaffold(
       backgroundColor: HomeColors.white,
-      appBar: showAppBar
-          ? AppBar(
-              backgroundColor: HomeColors.lightBlue,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.menu, color: HomeColors.navy, size: 28),
-                onPressed: onMenuTap,
-              ),
-            )
+      appBar: widget.showAppBar
+          ? HomeAppBar(onMenuTap: widget.onMenuTap, showLogo: !filled)
           : null,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SafeArea(
-            top: !showAppBar,
+            top: !widget.showAppBar,
             bottom: false,
             child: SingleChildScrollView(
               child: ConstrainedBox(
-                // minimal setinggi layar, supaya gelembung bawah
-                // tetap di dasar layar walau konten pendek
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Stack(
                   children: [
@@ -86,21 +114,21 @@ class PendampingHomePage extends StatelessWidget {
                               Expanded(
                                 child: StatCard(
                                   icon: Icons.event_available,
-                                  count: riwayat.akanDatang,
+                                  count: filled ? riwayat.akanDatang : null,
                                   label: 'Akan Datang',
                                   background: HomeColors.white,
                                   iconColor: HomeColors.blue,
                                   iconBackground: HomeColors.lightBlue,
                                   textColor: HomeColors.navy,
                                   countColor: HomeColors.blue,
-                                  onTap: onAkanDatangTap,
+                                  onTap: widget.onAkanDatangTap,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: StatCard(
                                   icon: Icons.play_arrow_rounded,
-                                  count: riwayat.berlangsung,
+                                  count: filled ? riwayat.berlangsung : null,
                                   label: 'Berlangsung',
                                   background: HomeColors.white,
                                   iconColor: HomeColors.orange,
@@ -109,14 +137,14 @@ class PendampingHomePage extends StatelessWidget {
                                   textColor: HomeColors.orange,
                                   countColor: HomeColors.orange,
                                   showDot: true,
-                                  onTap: onBerlangsungTap,
+                                  onTap: widget.onBerlangsungTap,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: StatCard(
                                   icon: Icons.check_circle_outline,
-                                  count: riwayat.selesai,
+                                  count: filled ? riwayat.selesai : null,
                                   label: 'Selesai',
                                   background: HomeColors.navy,
                                   iconColor: HomeColors.white,
@@ -124,29 +152,40 @@ class PendampingHomePage extends StatelessWidget {
                                       HomeColors.white.withAlpha(30),
                                   textColor: HomeColors.white,
                                   countColor: HomeColors.white,
-                                  onTap: onSelesaiTap,
+                                  onTap: widget.onSelesaiTap,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 28),
-                          Text('Pendampingan Sedang Berlangsung',
-                              style:
-                                  HomeText.sectionTitle.copyWith(fontSize: 16)),
-                          const SizedBox(height: 14),
-                          OngoingSessionCard(
-                            item: PendampingHomeDummy.berlangsung,
-                            onDetailTap: onOngoingDetailTap,
-                          ),
-                          const SizedBox(height: 28),
-                          Text('Pendampingan Selanjutnya',
-                              style:
-                                  HomeText.sectionTitle.copyWith(fontSize: 16)),
-                          const SizedBox(height: 14),
-                          NextSessionCard(
-                            item: PendampingHomeDummy.selanjutnya,
-                            onDetailTap: onNextDetailTap,
-                          ),
+                          if (!filled) ...[
+                            const SizedBox(height: 24),
+                            JadwalPerkuliahanButton(onTap: _openJadwal),
+                            const SizedBox(height: 24),
+                            Text('Pendampingan Sedang Berlangsung',
+                                style: HomeText.sectionTitle
+                                    .copyWith(fontSize: 16)),
+                            const SizedBox(height: 8),
+                            const Center(child: HomeEmptyState()),
+                          ] else ...[
+                            const SizedBox(height: 28),
+                            Text('Pendampingan Sedang Berlangsung',
+                                style: HomeText.sectionTitle
+                                    .copyWith(fontSize: 16)),
+                            const SizedBox(height: 14),
+                            OngoingSessionCard(
+                              item: PendampingHomeDummy.berlangsung,
+                              onDetailTap: widget.onOngoingDetailTap,
+                            ),
+                            const SizedBox(height: 28),
+                            Text('Pendampingan Selanjutnya',
+                                style: HomeText.sectionTitle
+                                    .copyWith(fontSize: 16)),
+                            const SizedBox(height: 14),
+                            NextSessionCard(
+                              item: PendampingHomeDummy.selanjutnya,
+                              onDetailTap: widget.onNextDetailTap,
+                            ),
+                          ],
                         ],
                       ),
                     ),

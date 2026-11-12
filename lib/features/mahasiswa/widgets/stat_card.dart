@@ -41,7 +41,7 @@ class MhsStatCard extends StatelessWidget {
         border: adaBorder
             ? Border.all(
                 color: (orangeDot ? MhsColors.orange : MhsColors.border)
-                    .withOpacity(.35),
+                    .withValues(alpha: .35)
               )
             : null,
         boxShadow: const [
