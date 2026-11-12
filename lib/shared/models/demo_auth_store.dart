@@ -8,7 +8,7 @@ class DemoAuthStore {
   String? _password;
   String? _role;
 
-  // Menentukan apakah Pendamping yang sedang login
+  // Menentukan apakah pendamping yang login
   // merupakan akun baru hasil registrasi.
   bool isNewPendampingLogin = false;
 
