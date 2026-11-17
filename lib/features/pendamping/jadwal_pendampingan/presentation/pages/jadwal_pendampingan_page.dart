@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+
 import '../../controller/jadwal_controller.dart';
 import '../../data/jadwal_dummy.dart';
 import '../jadwal_style.dart';
@@ -9,22 +11,13 @@ import '../widgets/jadwal_card.dart';
 import '../widgets/status_tab_bar.dart';
 import '../widgets/success_toast.dart';
 
-/// Halaman Jadwal Pendampingan (aktor pendamping).
-/// - Tidak membuat Drawer/sidebar (milik anggota lain).
-/// - Tab, Ajukan Perizinan, Setujui, dan Konfirmasi Kehadiran
-///   bekerja di dalam satu halaman.
 class JadwalPendampinganPage extends StatefulWidget {
-  /// Tab yang aktif saat halaman dibuka.
   final JadwalStatus initialTab;
-
-  /// Panah kembali. Jika null -> Navigator.maybePop (kembali ke beranda).
   final VoidCallback? onBackTap;
 
-  /// Dipanggil setelah pengajuan perizinan dikirim (item + alasan).
-  /// Sambungkan ke backend / modul perizinan tim jika sudah siap.
-  final void Function(JadwalItem item, String alasan)? onPerizinanSubmitted;
+  final void Function(JadwalItem item, String alasan)?
+      onPerizinanSubmitted;
 
-  /// false jika dipasang di layout yang sudah punya AppBar.
   final bool showAppBar;
 
   const JadwalPendampinganPage({
@@ -40,13 +33,19 @@ class JadwalPendampinganPage extends StatefulWidget {
       _JadwalPendampinganPageState();
 }
 
-class _JadwalPendampinganPageState extends State<JadwalPendampinganPage> {
+class _JadwalPendampinganPageState
+    extends State<JadwalPendampinganPage> {
   late final JadwalController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = JadwalController(initialTab: widget.initialTab);
+
+    // Controller langsung membaca data berdasarkan
+    // akun yang sedang login.
+    _controller = JadwalController(
+      initialTab: widget.initialTab,
+    );
   }
 
   @override
@@ -58,10 +57,12 @@ class _JadwalPendampinganPageState extends State<JadwalPendampinganPage> {
   void _snack(String msg) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(msg),
-        duration: const Duration(seconds: 2),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          duration: const Duration(seconds: 2),
+        ),
+      );
   }
 
   void _back() {
@@ -73,10 +74,13 @@ class _JadwalPendampinganPageState extends State<JadwalPendampinganPage> {
   }
 
   Future<void> _ajukan(JadwalItem item) async {
-    final alasan = await AjukanPerizinanDialog.show(context, item);
+    final alasan =
+        await AjukanPerizinanDialog.show(context, item);
+
     if (alasan == null || !mounted) return;
 
     _controller.ajukanPerizinan(item.id);
+
     widget.onPerizinanSubmitted?.call(item, alasan);
 
     SuccessToast.show(
@@ -89,12 +93,20 @@ class _JadwalPendampinganPageState extends State<JadwalPendampinganPage> {
 
   void _setujui(JadwalItem item) {
     _controller.setujui(item.id);
-    _snack('${item.mataKuliah} disetujui, dipindah ke Berlangsung');
+
+    _snack(
+      '${item.mataKuliah} disetujui, '
+      'dipindah ke Berlangsung',
+    );
   }
 
   void _konfirmasi(JadwalItem item) {
     _controller.konfirmasiKehadiran(item.id);
-    _snack('Kehadiran dikonfirmasi, dipindah ke Selesai');
+
+    _snack(
+      'Kehadiran dikonfirmasi, '
+      'dipindah ke Selesai',
+    );
   }
 
   @override
@@ -106,30 +118,51 @@ class _JadwalPendampinganPageState extends State<JadwalPendampinganPage> {
 
         return Scaffold(
           backgroundColor: JadwalColors.white,
-          appBar: widget.showAppBar ? JadwalAppBar(onBack: _back) : null,
+
+          appBar: widget.showAppBar
+              ? JadwalAppBar(onBack: _back)
+              : null,
+
           body: SafeArea(
             top: !widget.showAppBar,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                20,
+                16,
+                32,
+              ),
               children: [
-                Text('Jadwal Pendampingan',
-                    textAlign: TextAlign.center, style: JadwalText.title),
+                Text(
+                  'Jadwal Pendampingan',
+                  textAlign: TextAlign.center,
+                  style: JadwalText.title,
+                ),
+
                 const SizedBox(height: 6),
+
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                  ),
                   child: Text(
-                    'Kelola sesi bantuan pendampingan akademik mahasiswa',
+                    'Kelola sesi bantuan pendampingan '
+                    'akademik mahasiswa',
                     textAlign: TextAlign.center,
                     style: JadwalText.subtitle,
                   ),
                 ),
+
                 const SizedBox(height: 20),
+
                 StatusTabBar(
                   selected: _controller.tab,
                   countOf: _controller.count,
                   onChanged: _controller.selectTab,
                 ),
+
                 const SizedBox(height: 24),
+
                 if (items.isEmpty)
                   const EmptyState()
                 else

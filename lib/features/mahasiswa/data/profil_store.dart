@@ -3,49 +3,32 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-/// Penyimpanan data profil Mahasiswa Difabel sementara.
-/// Data dapat berasal dari registrasi atau edit profil.
-///
-/// Belum menggunakan database atau backend.
 class ProfilStore extends ChangeNotifier {
   ProfilStore._();
 
   static final ProfilStore instance = ProfilStore._();
 
-  // =========================================
-  // DATA PROFIL MAHASISWA DIFABEL
-  // =========================================
-
+  // DATA PROFIL MAHASISWA
   String nama = 'Dono Prasetyo';
   String nim = '254365796116534';
   String email = 'karinaputri@student.ub.ac.id';
   String telepon = '084523456745';
   String prodi = 'Fakultas Ilmu Komputer/Teknik Informatika';
   String disabilitas = 'Tuli';
-  String sandi = 'password';
 
-  // Foto profil disimpan sebagai bytes.
-  // null berarti menggunakan ikon profil default.
+  // FOTO PROFIL DALAM BENTUK BYTES
   Uint8List? foto;
 
-  // =========================================
   // NAMA PANGGILAN
-  // =========================================
-
   String get panggilan {
     final namaBersih = nama.trim();
 
-    if (namaBersih.isEmpty) {
-      return 'Mahasiswa';
-    }
+    if (namaBersih.isEmpty) return 'Mahasiswa';
 
     return namaBersih.split(RegExp(r'\s+')).first;
   }
 
-  // =========================================
-  // MENYIMPAN DATA DARI HALAMAN REGISTER
-  // =========================================
-
+  // MENYIMPAN DATA DARI REGISTRASI
   void isiDariRegistrasi({
     required String nama,
     required String nim,
@@ -53,6 +36,7 @@ class ProfilStore extends ChangeNotifier {
     required String telepon,
     required String prodi,
     required String disabilitas,
+    required Uint8List fotoBytes,
   }) {
     this.nama = nama.trim();
     this.nim = nim.trim();
@@ -61,30 +45,8 @@ class ProfilStore extends ChangeNotifier {
     this.prodi = prodi.trim();
     this.disabilitas = disabilitas.trim();
 
-    // Akun baru menggunakan foto default.
-    foto = null;
-
-    // Memberi tahu halaman yang menggunakan ProfilStore
-    // supaya memperbarui tampilan.
-    notifyListeners();
-  }
-
-  // =========================================
-  // MENYIMPAN PERUBAHAN DARI EDIT PROFIL
-  // =========================================
-
-  void simpan({
-    required String nama,
-    required String email,
-    required String telepon,
-    required String sandi,
-    Uint8List? foto,
-  }) {
-    this.nama = nama.trim();
-    this.email = email.trim();
-    this.telepon = telepon.trim();
-    this.sandi = sandi;
-    this.foto = foto;
+    // Foto langsung disimpan sebagai bytes.
+    foto = fotoBytes;
 
     notifyListeners();
   }

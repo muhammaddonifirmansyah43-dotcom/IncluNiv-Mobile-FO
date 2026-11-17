@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/models/pendamping_profile_store.dart';
 import '../../../shared/models/demo_auth_store.dart';
@@ -37,6 +38,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   RegisterRole selectedRole = RegisterRole.pendamping;
 
+  // FOTO PROFIL MAHASISWA
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? _fotoDipilih;
+  String? _errorFoto;
+
   // CONTROLLER INPUT
   final _namaController = TextEditingController();
   final _nomorIndukController = TextEditingController();
@@ -48,6 +54,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _dukunganController = TextEditingController();
   final _passwordController = TextEditingController();
   final _konfirmasiController = TextEditingController();
+final FocusNode _passwordFocusNode = FocusNode();
+final FocusNode _konfirmasiFocusNode = FocusNode();
 
   // PENYIMPAN PESAN ERROR
   final Map<TextEditingController, String> _errors = {};
@@ -58,7 +66,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool get isPendamping =>
       selectedRole == RegisterRole.pendamping;
 
-  // MEMBERSIHKAN CONTROLLER
   @override
   void dispose() {
     _namaController.dispose();
@@ -71,6 +78,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _dukunganController.dispose();
     _passwordController.dispose();
     _konfirmasiController.dispose();
+    _passwordFocusNode.dispose();
+_konfirmasiFocusNode.dispose();
     super.dispose();
   }
 
@@ -109,6 +118,8 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() {
       selectedRole = role;
       _errors.clear();
+      _fotoDipilih = null;
+      _errorFoto = null;
 
       _keahlianController.clear();
       _disabilitasController.clear();
@@ -116,7 +127,47 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
+  // MEMILIH FOTO PROFIL
+  Future<void> _pilihFoto() async {
+    try {
+      final XFile? foto = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 85,
+      );
+
+      if (foto == null || !mounted) return;
+
+      final namaFile = foto.name.toLowerCase();
+
+      final formatValid =
+          namaFile.endsWith('.jpg') ||
+          namaFile.endsWith('.jpeg') ||
+          namaFile.endsWith('.png');
+
+      if (!formatValid) {
+        setState(() {
+          _errorFoto = 'Gunakan JPG, JPEG, atau PNG';
+        });
+        return;
+      }
+
+      setState(() {
+        _fotoDipilih = foto;
+        _errorFoto = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorFoto = 'Foto gagal dipilih';
+      });
+    }
+  }
+
+  // ==========================================
   // VALIDASI INPUT
+  // ==========================================
   String? _validateInput(
     TextEditingController controller,
   ) {
@@ -126,6 +177,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return 'Wajib diisi';
     }
 
+    // VALIDASI EMAIL
     if (controller == _emailController) {
       final pattern = RegExp(
         r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
@@ -136,17 +188,43 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     }
 
+    // VALIDASI NIM: ANGKA, MINIMAL 16 DIGIT
     if (controller == _nomorIndukController) {
       if (!RegExp(r'^\d+$').hasMatch(value)) {
         return 'Harus berupa angka';
       }
+
+      if (value.length < 15) {
+        return 'Minimal 15 digit';
+      }
     }
 
-    if (controller == _passwordController &&
-        controller.text.length < 8) {
-      return 'Minimal 8 karakter';
+    // VALIDASI PASSWORD
+    if (controller == _passwordController) {
+      final password = controller.text;
+
+      if (password.length < 8) {
+        return 'Minimal 8 karakter';
+      }
+
+      if (!RegExp(r'[A-Z]').hasMatch(password)) {
+        return 'Perlu huruf besar';
+      }
+
+      if (!RegExp(r'[a-z]').hasMatch(password)) {
+        return 'Perlu huruf kecil';
+      }
+
+      if (!RegExp(r'[0-9]').hasMatch(password)) {
+        return 'Perlu angka';
+      }
+
+      if (!RegExp(r'[^A-Za-z0-9\s]').hasMatch(password)) {
+        return 'Perlu simbol (!@#)';
+      }
     }
 
+    // VALIDASI KONFIRMASI PASSWORD
     if (controller == _konfirmasiController &&
         controller.text != _passwordController.text) {
       return 'Sandi tidak sama';
@@ -155,9 +233,10 @@ class _RegisterPageState extends State<RegisterPage> {
     return null;
   }
 
+  // ==========================================
   // TOMBOL DAFTAR
-  void _submitForm() {
-    FocusScope.of(context).unfocus();
+  // ==========================================
+  Future<void> _submitForm() async {
 
     final controllers = <TextEditingController>[
       _namaController,
@@ -165,21 +244,18 @@ class _RegisterPageState extends State<RegisterPage> {
       _emailController,
       _fakultasController,
       _teleponController,
-
       if (isPendamping)
         _keahlianController
       else ...[
         _disabilitasController,
         _dukunganController,
       ],
-
       _passwordController,
       _konfirmasiController,
     ];
 
     final newErrors = <TextEditingController, String>{};
 
-    // VALIDASI SEMUA KOLOM
     for (final controller in controllers) {
       final error = _validateInput(controller);
 
@@ -192,14 +268,21 @@ class _RegisterPageState extends State<RegisterPage> {
       _errors
         ..clear()
         ..addAll(newErrors);
+
+      _errorFoto =
+          (!isPendamping && _fotoDipilih == null)
+              ? 'Foto wajib dipilih'
+              : null;
     });
 
     // JANGAN LANJUT JIKA ADA ERROR
-    if (newErrors.isNotEmpty) return;
+    if (newErrors.isNotEmpty ||
+        (!isPendamping && _fotoDipilih == null)) {
+      return;
+    }
+   
 
-    // ========================================
     // SIMPAN DATA PROFIL PENDAMPING
-    // ========================================
     if (isPendamping) {
       PendampingProfileStore.instance.saveRegistration(
         nama: _namaController.text.trim(),
@@ -211,23 +294,35 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     }
 
-    // ========================================
-    // SIMPAN DATA PROFIL MAHASISWA DIFABEL
-    // ========================================
+    // SIMPAN DATA PROFIL MAHASISWA
     if (!isPendamping) {
-      ProfilStore.instance.isiDariRegistrasi(
-        nama: _namaController.text.trim(),
-        nim: _nomorIndukController.text.trim(),
-        email: _emailController.text.trim(),
-        telepon: _teleponController.text.trim(),
-        prodi: _fakultasController.text.trim(),
-        disabilitas: _disabilitasController.text.trim(),
-      );
+      try {
+        final fotoBytes = await _fotoDipilih!.readAsBytes();
+
+        if (!mounted) return;
+
+        ProfilStore.instance.isiDariRegistrasi(
+          nama: _namaController.text.trim(),
+          nim: _nomorIndukController.text.trim(),
+          email: _emailController.text.trim(),
+          telepon: _teleponController.text.trim(),
+          prodi: _fakultasController.text.trim(),
+          disabilitas: _disabilitasController.text.trim(),
+          fotoBytes: fotoBytes,
+        );
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal membaca foto profil: $e'),
+          ),
+        );
+        return;
+      }
     }
 
-    // ========================================
-    // SIMPAN AKUN DEMO UNTUK LOGIN
-    // ========================================
+    // SIMPAN AKUN UNTUK LOGIN DEMO
     DemoAuthStore.instance.register(
       nim: _nomorIndukController.text.trim(),
       password: _passwordController.text,
@@ -236,15 +331,14 @@ class _RegisterPageState extends State<RegisterPage> {
           : 'Mahasiswa Disabilitas',
     );
 
-    // ========================================
     // NAVIGASI SETELAH REGISTRASI
-    // ========================================
     if (widget.onRegistered != null) {
       widget.onRegistered!();
       return;
     }
 
-    // UNTUK PREVIEW MANDIRI
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: navy,
@@ -257,9 +351,9 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // ========================================
-  // TAMPILAN HALAMAN REGISTER
-  // ========================================
+  // ==========================================
+  // TAMPILAN REGISTER
+  // ==========================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -327,7 +421,6 @@ class _RegisterPageState extends State<RegisterPage> {
                           color: navy,
                         ),
                       ),
-
                       const Expanded(
                         child: Text(
                           'Registrasi',
@@ -338,7 +431,6 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(width: 48),
                     ],
                   ),
@@ -385,12 +477,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
                         const SizedBox(height: 14),
 
-                        // PILIHAN AKTOR
                         _roleSelector(),
 
                         const SizedBox(height: 14),
 
-                        // NAMA LENGKAP
+                        // NAMA
                         _field(
                           label: 'Nama Lengkap',
                           hint: 'Contoh: Brawijaya Pratama',
@@ -398,18 +489,16 @@ class _RegisterPageState extends State<RegisterPage> {
                           controller: _namaController,
                         ),
 
-                        // NOMOR INDUK
+                        // NIM
                         _field(
-                          label: isPendamping
-                              ? 'Nomor Induk Mahasiswa (NIM)'
-                              : 'Nomor Induk Mahasiswa (NIM)',
-                          hint: 'Contoh: 2615502010000',
+                          label: 'Nomor Induk Mahasiswa (NIM)',
+                          hint: 'Minimal 16 digit angka',
                           icon: Icons.badge_outlined,
                           controller: _nomorIndukController,
                           keyboardType: TextInputType.number,
                         ),
 
-                        // EMAIL MAHASISWA
+                        // EMAIL
                         _field(
                           label: 'Email Mahasiswa UB',
                           hint: 'nama_anda@student.ub.ac.id',
@@ -419,15 +508,16 @@ class _RegisterPageState extends State<RegisterPage> {
                               TextInputType.emailAddress,
                         ),
 
-                        // FAKULTAS / PROGRAM STUDI
+                        // FAKULTAS / PRODI
                         _field(
                           label: 'Fakultas/Program Studi',
-                          hint: 'Contoh: Vokasi/D3 Teknologi Informasi',
+                          hint:
+                              'Contoh: Vokasi/D3 Teknologi Informasi',
                           icon: Icons.school_outlined,
                           controller: _fakultasController,
                         ),
 
-                        // NOMOR TELEPON
+                        // TELEPON
                         _field(
                           label: 'Nomor Telepon',
                           hint: '+62 823 8901 2345',
@@ -436,7 +526,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           keyboardType: TextInputType.phone,
                         ),
 
-                        // KHUSUS PENDAMPING
+                        // FIELD KHUSUS PENDAMPING
                         if (isPendamping)
                           _field(
                             label: 'Keahlian',
@@ -444,9 +534,8 @@ class _RegisterPageState extends State<RegisterPage> {
                             icon: Icons.psychology_outlined,
                             controller: _keahlianController,
                           )
-
-                        // KHUSUS MAHASISWA DIFABEL
                         else ...[
+                          // FIELD KHUSUS MAHASISWA
                           _field(
                             label: 'Jenis Disabilitas',
                             hint: 'Masukkan Jenis Disabilitas',
@@ -462,12 +551,14 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ],
 
-                        // KATA SANDI
+                        // PASSWORD
                         _field(
                           label: 'Kata Sandi Akun',
-                          hint: 'Minimal 8 karakter unik',
+                          hint:
+                              'Min. 8 karakter, huruf, angka & simbol',
                           icon: Icons.lock_outline,
                           controller: _passwordController,
+                          focusNode: _passwordFocusNode,
                           obscure: _obscurePassword,
                           suffix: IconButton(
                             tooltip: _obscurePassword
@@ -489,12 +580,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
 
-                        // KONFIRMASI KATA SANDI
+                        // KONFIRMASI PASSWORD
                         _field(
                           label: 'Konfirmasi Kata Sandi',
                           hint: 'Masukkan kembali sandi',
                           icon: Icons.lock_outline,
                           controller: _konfirmasiController,
+                          focusNode: _konfirmasiFocusNode,
                           obscure: _obscureConfirm,
                           suffix: IconButton(
                             tooltip: _obscureConfirm
@@ -515,6 +607,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ),
                         ),
+
+                        // FOTO PROFIL KHUSUS MAHASISWA
+                        if (!isPendamping) _photoField(),
 
                         const SizedBox(height: 20),
 
@@ -602,9 +697,139 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // ========================================
+  // ==========================================
+  // FORM FOTO PROFIL MAHASISWA
+  // ==========================================
+  Widget _photoField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Foto Profil',
+                  style: TextStyle(
+                    color: navy,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              if (_errorFoto != null)
+                Text(
+                  _errorFoto!,
+                  style: const TextStyle(
+                    color: errorRed,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 5),
+
+          SizedBox(
+            height: 40,
+            child: Container(
+              decoration: BoxDecoration(
+                color: lightBlue,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                  color: _errorFoto != null
+                      ? errorRed
+                      : const Color(0xFFE1E5F0),
+                ),
+              ),
+
+              child: Row(
+                children: [
+                  TextButton(
+                    onPressed: _pilihFoto,
+                    style: TextButton.styleFrom(
+                      foregroundColor: navy,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Pilih Foto',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: const Color(0xFFD8DEEC),
+                  ),
+
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                      ),
+                      child: Text(
+                        _fotoDipilih?.name ??
+                            'Belum ada foto yang dipilih',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _fotoDipilih == null
+                              ? const Color(0xFFB7BDCA)
+                              : navy,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  if (_fotoDipilih != null)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Hapus pilihan foto',
+                      onPressed: () {
+                        setState(() {
+                          _fotoDipilih = null;
+                          _errorFoto = null;
+                        });
+                      },
+                      icon: const Icon(
+                        Icons.close,
+                        size: 15,
+                        color: navy,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Format JPG, JPEG, atau PNG. Foto wajib diisi.',
+              style: TextStyle(
+                fontSize: 9,
+                color: Color(0xFF8A91A0),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
   // PILIHAN AKTOR
-  // ========================================
+  // ==========================================
   Widget _roleSelector() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -613,9 +838,7 @@ class _RegisterPageState extends State<RegisterPage> {
           'Pendamping',
           RegisterRole.pendamping,
         ),
-
         const SizedBox(width: 7),
-
         _roleButton(
           'Mahasiswa\nDifabel',
           RegisterRole.mahasiswa,
@@ -662,15 +885,15 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // ========================================
+  // ==========================================
   // KOMPONEN INPUT
-  // ERROR DI SEBELAH KANAN JUDUL
-  // ========================================
+  // ==========================================
   Widget _field({
     required String label,
     required String hint,
     required IconData icon,
     required TextEditingController controller,
+    FocusNode? focusNode,
     TextInputType keyboardType = TextInputType.text,
     bool obscure = false,
     Widget? suffix,
@@ -682,7 +905,6 @@ class _RegisterPageState extends State<RegisterPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // LABEL DAN ERROR
           Row(
             children: [
               Expanded(
@@ -700,7 +922,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
               if (error != null) ...[
                 const SizedBox(width: 6),
-
                 Flexible(
                   child: Text(
                     error,
@@ -720,11 +941,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
           const SizedBox(height: 5),
 
-          // KOLOM INPUT
           SizedBox(
             height: 40,
             child: TextField(
               controller: controller,
+              focusNode: focusNode,
               obscureText: obscure,
               keyboardType: keyboardType,
               style: const TextStyle(
@@ -732,45 +953,41 @@ class _RegisterPageState extends State<RegisterPage> {
                 color: navy,
               ),
 
-              onChanged: (_) {
-                if (_errors.containsKey(controller) ||
-                    (controller == _passwordController &&
-                        _errors.containsKey(
-                          _konfirmasiController,
-                        ))) {
-                  setState(() {
-                    if (_errors.containsKey(controller)) {
-                      final newError =
-                          _validateInput(controller);
+              // PERBARUI PESAN ERROR SAAT MENGETIK
+              
+onChanged: (value) {
+  if (!_errors.containsKey(controller) &&
+      !(controller == _passwordController &&
+          _errors.containsKey(_konfirmasiController))) {
+    return;
+  }
 
-                      if (newError == null) {
-                        _errors.remove(controller);
-                      } else {
-                        _errors[controller] = newError;
-                      }
-                    }
+  setState(() {
+    // Validasi ulang input yang sedang diperbaiki.
+    if (_errors.containsKey(controller)) {
+      final newError = _validateInput(controller);
 
-                    if (controller ==
-                            _passwordController &&
-                        _errors.containsKey(
-                          _konfirmasiController,
-                        )) {
-                      final confirmError = _validateInput(
-                        _konfirmasiController,
-                      );
+      if (newError == null) {
+        _errors.remove(controller);
+      } else {
+        _errors[controller] = newError;
+      }
+    }
 
-                      if (confirmError == null) {
-                        _errors.remove(
-                          _konfirmasiController,
-                        );
-                      } else {
-                        _errors[_konfirmasiController] =
-                            confirmError;
-                      }
-                    }
-                  });
-                }
-              },
+    // Validasi ulang konfirmasi jika password berubah.
+    if (controller == _passwordController &&
+        _errors.containsKey(_konfirmasiController)) {
+      final confirmError = _validateInput(_konfirmasiController);
+
+      if (confirmError == null) {
+        _errors.remove(_konfirmasiController);
+      } else {
+        _errors[_konfirmasiController] = confirmError;
+      }
+    }
+  });
+},
+  
 
               decoration: InputDecoration(
                 hintText: hint,
@@ -826,7 +1043,9 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ==========================================
   // DEKORASI LINGKARAN
+  // ==========================================
   Widget _circle(
     Color color,
     double size,
