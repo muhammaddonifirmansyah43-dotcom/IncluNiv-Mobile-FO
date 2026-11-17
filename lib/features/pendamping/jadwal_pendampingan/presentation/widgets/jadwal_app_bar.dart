@@ -1,14 +1,24 @@
+
 import 'package:flutter/material.dart';
+
+import '../../../../../shared/widgets/app_logo.dart';
 import '../jadwal_style.dart';
 
-/// App bar: panah kembali (kiri) + logo IncluNiv (kanan).
-class JadwalAppBar extends StatelessWidget implements PreferredSizeWidget {
+/// AppBar Jadwal Pendampingan.
+/// Kiri: tombol kembali.
+/// Kanan: gambar aplikasi dan tulisan IncluNiv.
+class JadwalAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   final VoidCallback onBack;
 
-  const JadwalAppBar({super.key, required this.onBack});
+  const JadwalAppBar({
+    super.key,
+    required this.onBack,
+  });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize =>
+      const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -19,57 +29,35 @@ class JadwalAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 3,
       scrolledUnderElevation: 3,
       shadowColor: JadwalColors.navy.withAlpha(90),
+
       leading: IconButton(
         tooltip: 'Kembali',
-        icon: const Icon(Icons.arrow_back,
-            color: JadwalColors.navy, size: 30),
+        icon: const Icon(
+          Icons.arrow_back,
+          color: JadwalColors.navy,
+          size: 30,
+        ),
         onPressed: onBack,
       ),
-      actions: const [
+
+      actions: [
         Padding(
-          padding: EdgeInsets.only(right: 16),
-          child: _Logo(),
-        ),
-      ],
-    );
-  }
-}
-
-/// PLACEHOLDER: ganti dengan Image.asset(...) setelah asset logo
-/// tersedia dan didaftarkan di pubspec.yaml.
-class _Logo extends StatelessWidget {
-  const _Logo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        RichText(
-          text: TextSpan(
-            style: JadwalText.logo,
-            children: const [
-              TextSpan(text: 'Inclu'),
-              TextSpan(
-                  text: 'Niv',
-                  style: TextStyle(color: JadwalColors.orange)),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Container(
-          width: 32,
-          height: 32,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [JadwalColors.blue, JadwalColors.navy],
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/landing_illustration.png',
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 7),
+                const AppLogo(fontSize: 23),
+              ],
             ),
           ),
-          child: const Icon(Icons.school,
-              size: 18, color: JadwalColors.white),
         ),
       ],
     );

@@ -469,7 +469,28 @@ class _InputTeks extends StatelessWidget {
     );
   }
 }
+class _FormatJam extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digit = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
+    if (digit.length > 4) {
+      digit = digit.substring(0, 4);
+    }
+
+    final teks = digit.length > 2
+        ? '${digit.substring(0, 2)}:${digit.substring(2)}'
+        : digit;
+
+    return TextEditingValue(
+      text: teks,
+      selection: TextSelection.collapsed(offset: teks.length),
+    );
+  }
+}
 // Input jam manual dengan format HH:mm.
 class _InputJam extends StatelessWidget {
   const _InputJam({
@@ -493,9 +514,8 @@ class _InputJam extends StatelessWidget {
         controller: controller,
         keyboardType: TextInputType.datetime,
         inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
-          LengthLimitingTextInputFormatter(5),
-        ],
+  _FormatJam(),
+],
         onChanged: onChanged,
         style: _isiStyle,
         decoration: const InputDecoration(

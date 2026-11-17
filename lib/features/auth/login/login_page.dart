@@ -170,6 +170,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _nimController = TextEditingController();
   final _passwordController = TextEditingController();
+  // Menjaga fokus kolom password ketika login gagal.
+  final FocusNode _passwordFocusNode = FocusNode();
 
   bool _obscurePassword = true;
   bool _rememberMe = false;
@@ -179,73 +181,74 @@ class _LoginPageState extends State<LoginPage> {
   String? _loginError;
 
   @override
-  void dispose() {
-    _nimController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
+void dispose() {
+  _nimController.dispose();
+  _passwordController.dispose();
+  _passwordFocusNode.dispose();
+  super.dispose();
+}
   // =========================================
   // VALIDASI DAN PROSES LOGIN
   // =========================================
 
-  void _login(String role) {
-    FocusScope.of(context).unfocus();
+ void _login(String role) {
+  final nim = _nimController.text.trim();
+  final password = _passwordController.text;
 
-    final nim = _nimController.text.trim();
-    final password = _passwordController.text;
+  setState(() {
+    _nimError = nim.isEmpty
+        ? 'Wajib diisi'
+        : !RegExp(r'^\d+$').hasMatch(nim)
+            ? 'NIM harus berupa angka'
+            : null;
 
+    _passwordError = password.isEmpty
+        ? 'Wajib diisi'
+        : null;
+
+    _loginError = null;
+  });
+
+  if (_nimError != null || _passwordError != null) {
+    if (_passwordError != null) {
+      _passwordFocusNode.requestFocus();
+    }
+    return;
+  }
+
+  final isValid = DemoAuthStore.instance.canLogin(
+    nim,
+    password,
+    role,
+  );
+
+  if (!isValid) {
     setState(() {
-      _nimError = nim.isEmpty
-          ? 'Wajib diisi'
-          : !RegExp(r'^\d+$').hasMatch(nim)
-              ? 'NIM harus berupa angka'
-              : null;
-
-      _passwordError = password.isEmpty
-          ? 'Wajib diisi'
-          : null;
-
-      _loginError = null;
+      _loginError = 'Username atau password salah';
     });
 
-    if (_nimError != null ||
-        _passwordError != null) {
-      return;
-    }
-
-    // MEMERIKSA AKUN DARI REGISTER
-    final isValid = DemoAuthStore.instance.canLogin(
-      nim,
-      password,
-      role,
-    );
-
-    if (!isValid) {
-      setState(() {
-        _loginError = 'Username atau password salah';
-      });
-      return;
-    }
-
-    // JIKA DIGUNAKAN MELALUI MAIN.DART
-    // CALLBACK MENGARAHKAN KE BERANDA AKTOR
-    if (widget.onLoginSuccess != null) {
-      widget.onLoginSuccess!(role);
-      return;
-    }
-
-    // JIKA DIJALANKAN VIA PREVIEW LOGIN
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: _AuthColors.navy,
-        content: Text(
-          'Simulasi login sebagai $role berhasil. '
-          'Beranda belum dihubungkan pada preview ini.',
-        ),
-      ),
-    );
+    _passwordFocusNode.requestFocus();
+    return;
   }
+
+  // Keyboard ditutup setelah login berhasil.
+  FocusScope.of(context).unfocus();
+
+  if (widget.onLoginSuccess != null) {
+    widget.onLoginSuccess!(role);
+    return;
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      backgroundColor: _AuthColors.navy,
+      content: Text(
+        'Simulasi login sebagai $role berhasil. '
+        'Beranda belum dihubungkan pada preview ini.',
+      ),
+    ),
+  );
+}
 
   // =========================================
   // NAVIGASI KE REGISTER
@@ -287,17 +290,18 @@ class _LoginPageState extends State<LoginPage> {
   // KOMPONEN INPUT LOGIN
   // =========================================
 
-  Widget _input({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    required IconData icon,
-    required String? error,
-    required ValueChanged<String> onChanged,
-    bool obscure = false,
-    Widget? suffix,
-    TextInputType type = TextInputType.text,
-  }) {
+ Widget _input({
+  required String label,
+  required String hint,
+  required TextEditingController controller,
+  required IconData icon,
+  required String? error,
+  required ValueChanged<String> onChanged,
+  bool obscure = false,
+  Widget? suffix,
+  TextInputType type = TextInputType.text,
+  FocusNode? focusNode,
+}) {
     final hasError = error != null;
 
     return Column(
@@ -336,8 +340,12 @@ class _LoginPageState extends State<LoginPage> {
         SizedBox(
           height: 47,
           child: TextField(
-            controller: controller,
-            keyboardType: type,
+  key: controller == _passwordController
+      ? const ValueKey('login-password-field')
+      : null,
+  controller: controller,
+  focusNode: focusNode,
+  keyboardType: type,
             obscureText: obscure,
             onChanged: onChanged,
             style: const TextStyle(
@@ -505,6 +513,7 @@ class _LoginPageState extends State<LoginPage> {
             label: 'Password / Kata Sandi',
             hint: 'Masukkan kata sandi akun',
             controller: _passwordController,
+            focusNode: _passwordFocusNode,
             icon: Icons.lock_outline,
             obscure: _obscurePassword,
             error: _passwordError,

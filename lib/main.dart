@@ -8,11 +8,14 @@ import 'features/auth/landing/landing_page.dart';
 import 'features/auth/login/login_page.dart';
 import 'features/auth/register/register_page.dart';
 
+// STATUS AKUN DEMO / AKUN BARU
+import 'shared/models/demo_auth_store.dart';
+
 // ==========================================
 // MAHASISWA DIFABEL
 // ==========================================
 import 'features/mahasiswa/pages/beranda_page.dart';
-
+import 'features/mahasiswa/data/jadwal_store.dart';
 // ==========================================
 // PENDAMPING
 // ==========================================
@@ -40,7 +43,7 @@ void main() {
 }
 
 // ==========================================
-// APLIKASI UTAMA
+// APLIKASI UTAMA INCLUNIV
 // ==========================================
 
 class IncluNivApp extends StatelessWidget {
@@ -50,16 +53,13 @@ class IncluNivApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IncluNiv',
-
       debugShowCheckedModeBanner: false,
 
       theme: ThemeData(
         useMaterial3: true,
-
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF3B82F6),
         ),
-
         scaffoldBackgroundColor: Colors.white,
       ),
 
@@ -67,21 +67,26 @@ class IncluNivApp extends StatelessWidget {
       initialRoute: '/',
 
       // ====================================
-      // ROUTING SEMUA HALAMAN
+      // ROUTING UTAMA
       // ====================================
-
       routes: {
         // LANDING PAGE
         '/': (context) => LandingPage(
               onRegister: () {
-                Navigator.of(context).pushNamed('/register');
+                Navigator.of(context).pushNamed(
+                  '/register',
+                );
               },
               onLogin: () {
-                Navigator.of(context).pushNamed('/login');
+                Navigator.of(context).pushNamed(
+                  '/login',
+                );
               },
             ),
 
+        // ==================================
         // REGISTER
+        // ==================================
         '/register': (context) => RegisterPage(
               onLogin: () {
                 Navigator.of(context).pushReplacementNamed(
@@ -96,7 +101,9 @@ class IncluNivApp extends StatelessWidget {
               },
             ),
 
+        // ==================================
         // LOGIN
+        // ==================================
         '/login': (context) => LoginPage(
               onRegister: () {
                 Navigator.of(context).pushNamed(
@@ -104,29 +111,45 @@ class IncluNivApp extends StatelessWidget {
                 );
               },
 
-              onLoginSuccess: (role) {
-                // PILIH BERANDA SESUAI AKTOR
-                final tujuan = role == 'Pendamping'
-                    ? '/pendamping'
-                    : '/mahasiswa';
+              
+onLoginSuccess: (role) {
+  // MENGATUR DATA DASHBOARD MAHASISWA
+  if (role == 'Mahasiswa') {
+    if (DemoAuthStore.instance.isDemoMahasiswaLogin) {
+      // Akun Demo: tampilkan data dummy.
+      JadwalStore.instance.isiDataContoh();
+    } else {
+      // Akun baru: dashboard tetap kosong.
+      JadwalStore.instance.kosongkan();
+    }
+  }
 
-                // HAPUS HALAMAN LOGIN DARI RIWAYAT
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  tujuan,
-                  (route) => false,
-                );
-              },
+  // MENENTUKAN BERANDA SESUAI AKTOR
+  final tujuan = role == 'Pendamping'
+      ? '/pendamping'
+      : '/mahasiswa';
+
+  // HAPUS RIWAYAT HALAMAN LOGIN
+  Navigator.of(context).pushNamedAndRemoveUntil(
+    tujuan,
+    (route) => false,
+  );
+},
+
             ),
 
+        // ==================================
         // BERANDA MAHASISWA DIFABEL
+        // ==================================
         '/mahasiswa': (context) =>
             const BerandaMahasiswaPage(),
 
+        // ==================================
         // BERANDA PENDAMPING
+        // ==================================
         '/pendamping': (context) =>
             _BerandaPendampingTerintegrasi(
               onLogout: () {
-                // KEMBALI KE LANDING
                 Navigator.of(context).pushNamedAndRemoveUntil(
                   '/',
                   (route) => false,
@@ -153,6 +176,13 @@ class _BerandaPendampingTerintegrasi
   @override
   Widget build(BuildContext context) {
     // ====================================
+    // CEK STATUS AKUN PENDAMPING
+    // ====================================
+
+    final bool isNewPendamping =
+        DemoAuthStore.instance.isNewPendampingLogin;
+
+    // ====================================
     // FUNGSI BUKA JADWAL PENDAMPINGAN
     // ====================================
 
@@ -169,15 +199,15 @@ class _BerandaPendampingTerintegrasi
     }
 
     // ====================================
-    // LAYOUT PENDAMPING
+    // LAYOUT BERANDA PENDAMPING
     // ====================================
 
     return PendampingHomeShell(
-      // CALLBACK LOGOUT
+      // LOGOUT KEMBALI KE LANDING
       onLogoutConfirmed: onLogout,
 
       // ==================================
-      // MENU SIDEBAR
+      // MENU SIDEBAR PENDAMPING
       // ==================================
       additionalPages: {
         // JADWAL KEGIATAN
@@ -194,39 +224,65 @@ class _BerandaPendampingTerintegrasi
       },
 
       // ==================================
-      // BERANDA ASLI BUATAN NAURA
+      // BERANDA ASLI NAURA
       // ==================================
       child: PendampingHomePage(
-        // MENGHINDARI DOUBLE APPBAR
+        // MENCEGAH DOUBLE APPBAR
         showAppBar: false,
+        onJadwalPerkuliahanTap: () {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => const kegiatan.JadwalFormPage(),
+    ),
+  );
+},
 
+        // =================================
+        // PERBEDAAN AKUN BARU DAN AKUN DEMO
+        // =================================
+        //
+        // TRUE  = DASHBOARD KOSONG
+        // FALSE = DASHBOARD BERISI DATA
+        //
+        isNewAccount: isNewPendamping,
+
+        // =================================
         // KARTU AKAN DATANG
+        // =================================
         onAkanDatangTap: () {
           openJadwal();
         },
 
+        // =================================
         // KARTU BERLANGSUNG
+        // =================================
         onBerlangsungTap: () {
           openJadwal(
             jp.JadwalStatus.berlangsung,
           );
         },
 
+        // =================================
         // KARTU SELESAI
+        // =================================
         onSelesaiTap: () {
           openJadwal(
             jp.JadwalStatus.selesai,
           );
         },
 
+        // =================================
         // DETAIL PENDAMPINGAN BERLANGSUNG
+        // =================================
         onOngoingDetailTap: () {
           openJadwal(
             jp.JadwalStatus.berlangsung,
           );
         },
 
+        // =================================
         // DETAIL PENDAMPINGAN SELANJUTNYA
+        // =================================
         onNextDetailTap: () {
           openJadwal();
         },

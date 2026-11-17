@@ -63,7 +63,7 @@ class MhsLogo extends StatelessWidget {
               ),
               TextSpan(
                 text: 'Niv',
-                style: TextStyle(color: MhsColors.blue),
+                style: TextStyle(color: Color.fromARGB(255, 249, 116, 22)),
               ),
             ],
           ),

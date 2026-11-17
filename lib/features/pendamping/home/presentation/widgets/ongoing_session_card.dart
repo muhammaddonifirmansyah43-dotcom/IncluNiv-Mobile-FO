@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../../data/pendampingan_dummy.dart';
 import '../home_style.dart';
@@ -6,10 +7,15 @@ class OngoingSessionCard extends StatelessWidget {
   final PendampinganItem item;
   final VoidCallback? onDetailTap;
 
-  const OngoingSessionCard({super.key, required this.item, this.onDetailTap});
+  const OngoingSessionCard({
+    super.key,
+    required this.item,
+    this.onDetailTap,
+  });
 
   Widget _photo() {
     final url = item.fotoUrl;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
@@ -17,23 +23,34 @@ class OngoingSessionCard extends StatelessWidget {
         height: 146,
         child: url == null
             ? _placeholder()
-            : Image.network(url,
+            : Image.network(
+                url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _placeholder(),),
+                errorBuilder: (context, error, stackTrace) => _placeholder(),
+              ),
       ),
     );
   }
 
-  Widget _placeholder() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF5B8DEF), HomeColors.navy],
-          ),
+  Widget _placeholder() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF5B8DEF),
+            HomeColors.navy,
+          ],
         ),
-        child: const Icon(Icons.person, size: 72, color: HomeColors.white),
-      );
+      ),
+      child: const Icon(
+        Icons.person,
+        size: 72,
+        color: HomeColors.white,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +59,8 @@ class OngoingSessionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: HomeColors.lightBlue,
         borderRadius: BorderRadius.circular(20),
+
+        // Shadow hanya pada kotak luar.
         boxShadow: [homeCardShadow],
       ),
       child: Column(
@@ -53,34 +72,62 @@ class OngoingSessionCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 12),
+                  padding: const EdgeInsets.fromLTRB(
+                    12,
+                    10,
+                    10,
+                    12,
+                  ),
                   decoration: BoxDecoration(
                     color: HomeColors.white,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [homeCardShadow],
+
+                    // Tidak ada shadow pada kotak dalam.
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Profil Singkat', style: HomeText.profileLabel),
-                      Text(item.namaMahasiswa,
-                          style: HomeText.studentNameLarge),
+                      Text(
+                        'Profil Singkat',
+                        style: HomeText.profileLabel,
+                      ),
+                      Text(
+                        item.namaMahasiswa,
+                        style: HomeText.studentNameLarge,
+                      ),
                       const SizedBox(height: 8),
-                      Row(children: [
-                        const Icon(Icons.access_time,
-                            size: 16, color: HomeColors.blue),
-                        const SizedBox(width: 8),
-                        Text(item.jam, style: HomeText.info),
-                      ]),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: HomeColors.blue,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.jam,
+                              style: HomeText.info,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.apartment,
-                              size: 16, color: HomeColors.blue),
+                          const Icon(
+                            Icons.apartment,
+                            size: 16,
+                            color: HomeColors.blue,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
-                              child: Text(item.lokasi, style: HomeText.info)),
+                            child: Text(
+                              item.lokasi,
+                              style: HomeText.info,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -94,8 +141,14 @@ class OngoingSessionCard extends StatelessWidget {
             child: InkWell(
               onTap: onDetailTap,
               child: Padding(
-                padding: const EdgeInsets.only(top: 8, right: 4),
-                child: Text('Lihat Detail', style: HomeText.detail),
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  right: 4,
+                ),
+                child: Text(
+                  'Lihat Detail',
+                  style: HomeText.detail,
+                ),
               ),
             ),
           ),

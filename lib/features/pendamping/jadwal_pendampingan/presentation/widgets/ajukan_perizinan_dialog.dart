@@ -88,39 +88,46 @@ class _AjukanPerizinanDialogState extends State<AjukanPerizinanDialog> {
     );
   }
 
-  Widget _reasonField() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-      decoration: BoxDecoration(
-        color: JadwalColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: _showError
-            ? Border.all(color: const Color(0xFFDC2626), width: 1)
-            : null,
-      ),
-      child: TextField(
-        controller: _reasonController,
-        minLines: 3,
-        maxLines: 5,
-        textCapitalization: TextCapitalization.sentences,
-        style: JadwalText.infoRow,
-        onChanged: (_) {
-          if (_showError) setState(() => _showError = false);
-        },
-        decoration: InputDecoration(
-          isDense: true,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          labelText: 'Tulis Alasan',
-          floatingLabelBehavior: FloatingLabelBehavior.always,
-          alignLabelWithHint: true,
-          labelStyle: JadwalText.disability
-              .copyWith(fontWeight: FontWeight.w600),
+  
+Widget _reasonField() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+    decoration: BoxDecoration(
+      color: JadwalColors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: _showError
+          ? Border.all(
+              color: const Color(0xFFDC2626),
+              width: 1,
+            )
+          : null,
+    ),
+    child: TextField(
+      controller: _reasonController,
+      minLines: 3,
+      maxLines: 5,
+      textCapitalization: TextCapitalization.sentences,
+      style: JadwalText.infoRow,
+      onChanged: (_) {
+        if (_showError) {
+          setState(() => _showError = false);
+        }
+      },
+      decoration: InputDecoration(
+        isDense: true,
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.zero,
+
+        // Placeholder hilang otomatis saat mengetik.
+        hintText: 'Tulis Alasan',
+        hintStyle: JadwalText.disability.copyWith(
+          fontWeight: FontWeight.w600,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _pillButton(String label, VoidCallback onTap) {
     return Material(

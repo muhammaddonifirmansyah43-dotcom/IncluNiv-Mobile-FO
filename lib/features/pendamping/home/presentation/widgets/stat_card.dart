@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../home_style.dart';
 
@@ -29,54 +30,81 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = background == HomeColors.navy;
+    final radius = BorderRadius.circular(14);
+
     return Material(
-      color: Colors.transparent,
+      color: background,
+      elevation: 5,
+      shadowColor: const Color(0x590F2D5B),
+      borderRadius: radius,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Ink(
-          height: 100,
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+        borderRadius: radius,
+        child: Container(
+          height: 88,
+          padding: const EdgeInsets.fromLTRB(9, 12, 9, 9),
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [homeCardShadow],
+            borderRadius: radius,
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF0F2D5B)
+                  : const Color(0xFFE1E7F2),
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 29,
+                    height: 29,
                     decoration: BoxDecoration(
                       color: iconBackground,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, size: 20, color: iconColor),
+                    child: Icon(
+                      icon,
+                      size: 16,
+                      color: iconColor,
+                    ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (showDot)
-                        Container(
-                          width: 6,
-                          height: 6,
-                          margin: const EdgeInsets.only(right: 3),
-                          decoration: BoxDecoration(
-                            color: countColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      Text('$count', style: HomeText.statCount(countColor)),
-                    ],
+                  const Spacer(),
+                  if (showDot) ...[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: countColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: countColor,
+                      height: 1,
+                    ),
                   ),
                 ],
               ),
-              Text(label, style: HomeText.statLabel(textColor)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: HomeText.statLabel(textColor),
+                ),
+              ),
             ],
           ),
         ),
