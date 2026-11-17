@@ -170,8 +170,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _nimController = TextEditingController();
   final _passwordController = TextEditingController();
-  // Menjaga fokus kolom password ketika login gagal.
-  final FocusNode _passwordFocusNode = FocusNode();
+ 
 
   bool _obscurePassword = true;
   bool _rememberMe = false;
@@ -181,17 +180,17 @@ class _LoginPageState extends State<LoginPage> {
   String? _loginError;
 
   @override
-void dispose() {
-  _nimController.dispose();
-  _passwordController.dispose();
-  _passwordFocusNode.dispose();
-  super.dispose();
-}
+  void dispose() {
+    _nimController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
   // =========================================
   // VALIDASI DAN PROSES LOGIN
   // =========================================
 
- void _login(String role) {
+ 
+void _login(String role) {
   final nim = _nimController.text.trim();
   final password = _passwordController.text;
 
@@ -202,17 +201,15 @@ void dispose() {
             ? 'NIM harus berupa angka'
             : null;
 
-    _passwordError = password.isEmpty
-        ? 'Wajib diisi'
-        : null;
+    _passwordError =
+        password.isEmpty ? 'Wajib diisi' : null;
 
     _loginError = null;
   });
 
+  // Jika kolom wajib belum diisi, tampilkan pesan.
+  // Tidak memaksa fokus dan tidak mengunci input.
   if (_nimError != null || _passwordError != null) {
-    if (_passwordError != null) {
-      _passwordFocusNode.requestFocus();
-    }
     return;
   }
 
@@ -222,16 +219,15 @@ void dispose() {
     role,
   );
 
+  // Jika akun atau password salah.
   if (!isValid) {
     setState(() {
       _loginError = 'Username atau password salah';
     });
-
-    _passwordFocusNode.requestFocus();
     return;
   }
 
-  // Keyboard ditutup setelah login berhasil.
+  // Login berhasil.
   FocusScope.of(context).unfocus();
 
   if (widget.onLoginSuccess != null) {
@@ -300,7 +296,7 @@ void dispose() {
   bool obscure = false,
   Widget? suffix,
   TextInputType type = TextInputType.text,
-  FocusNode? focusNode,
+
 }) {
     final hasError = error != null;
 
@@ -340,14 +336,17 @@ void dispose() {
         SizedBox(
           height: 47,
           child: TextField(
-  key: controller == _passwordController
-      ? const ValueKey('login-password-field')
-      : null,
+ 
   controller: controller,
-  focusNode: focusNode,
+
+  // Tambahan agar input tetap bisa diedit.
+  enabled: true,
+  readOnly: false,
+  enableInteractiveSelection: true,
+
   keyboardType: type,
-            obscureText: obscure,
-            onChanged: onChanged,
+  obscureText: obscure,
+  onChanged: onChanged,
             style: const TextStyle(
               fontSize: 12,
               color: _AuthColors.navy,
@@ -513,7 +512,6 @@ void dispose() {
             label: 'Password / Kata Sandi',
             hint: 'Masukkan kata sandi akun',
             controller: _passwordController,
-            focusNode: _passwordFocusNode,
             icon: Icons.lock_outline,
             obscure: _obscurePassword,
             error: _passwordError,
