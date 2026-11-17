@@ -54,8 +54,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _dukunganController = TextEditingController();
   final _passwordController = TextEditingController();
   final _konfirmasiController = TextEditingController();
-final FocusNode _passwordFocusNode = FocusNode();
-final FocusNode _konfirmasiFocusNode = FocusNode();
+
 
   // PENYIMPAN PESAN ERROR
   final Map<TextEditingController, String> _errors = {};
@@ -67,21 +66,20 @@ final FocusNode _konfirmasiFocusNode = FocusNode();
       selectedRole == RegisterRole.pendamping;
 
   @override
-  void dispose() {
-    _namaController.dispose();
-    _nomorIndukController.dispose();
-    _emailController.dispose();
-    _fakultasController.dispose();
-    _teleponController.dispose();
-    _keahlianController.dispose();
-    _disabilitasController.dispose();
-    _dukunganController.dispose();
-    _passwordController.dispose();
-    _konfirmasiController.dispose();
-    _passwordFocusNode.dispose();
-_konfirmasiFocusNode.dispose();
-    super.dispose();
-  }
+void dispose() {
+  _namaController.dispose();
+  _nomorIndukController.dispose();
+  _emailController.dispose();
+  _fakultasController.dispose();
+  _teleponController.dispose();
+  _keahlianController.dispose();
+  _disabilitasController.dispose();
+  _dukunganController.dispose();
+  _passwordController.dispose();
+  _konfirmasiController.dispose();
+
+  super.dispose();
+}
 
   // NAVIGASI KEMBALI
   void _handleBack() {
@@ -188,7 +186,7 @@ _konfirmasiFocusNode.dispose();
       }
     }
 
-    // VALIDASI NIM: ANGKA, MINIMAL 16 DIGIT
+    // VALIDASI NIM: ANGKA, MINIMAL 15 DIGIT
     if (controller == _nomorIndukController) {
       if (!RegExp(r'^\d+$').hasMatch(value)) {
         return 'Harus berupa angka';
@@ -492,7 +490,7 @@ _konfirmasiFocusNode.dispose();
                         // NIM
                         _field(
                           label: 'Nomor Induk Mahasiswa (NIM)',
-                          hint: 'Minimal 16 digit angka',
+                          hint: 'Minimal 15 digit angka',
                           icon: Icons.badge_outlined,
                           controller: _nomorIndukController,
                           keyboardType: TextInputType.number,
@@ -558,7 +556,6 @@ _konfirmasiFocusNode.dispose();
                               'Min. 8 karakter, huruf, angka & simbol',
                           icon: Icons.lock_outline,
                           controller: _passwordController,
-                          focusNode: _passwordFocusNode,
                           obscure: _obscurePassword,
                           suffix: IconButton(
                             tooltip: _obscurePassword
@@ -586,7 +583,6 @@ _konfirmasiFocusNode.dispose();
                           hint: 'Masukkan kembali sandi',
                           icon: Icons.lock_outline,
                           controller: _konfirmasiController,
-                          focusNode: _konfirmasiFocusNode,
                           obscure: _obscureConfirm,
                           suffix: IconButton(
                             tooltip: _obscureConfirm
@@ -955,7 +951,10 @@ _konfirmasiFocusNode.dispose();
 
               // PERBARUI PESAN ERROR SAAT MENGETIK
               
+
 onChanged: (value) {
+  // Validasi hanya diperbarui setelah pengguna
+  // pernah menekan tombol daftar dan mendapat error.
   if (!_errors.containsKey(controller) &&
       !(controller == _passwordController &&
           _errors.containsKey(_konfirmasiController))) {
@@ -963,7 +962,7 @@ onChanged: (value) {
   }
 
   setState(() {
-    // Validasi ulang input yang sedang diperbaiki.
+    // Periksa ulang kolom yang sedang diperbaiki.
     if (_errors.containsKey(controller)) {
       final newError = _validateInput(controller);
 
@@ -974,10 +973,11 @@ onChanged: (value) {
       }
     }
 
-    // Validasi ulang konfirmasi jika password berubah.
+    // Jika password berubah, periksa konfirmasinya.
     if (controller == _passwordController &&
         _errors.containsKey(_konfirmasiController)) {
-      final confirmError = _validateInput(_konfirmasiController);
+      final confirmError =
+          _validateInput(_konfirmasiController);
 
       if (confirmError == null) {
         _errors.remove(_konfirmasiController);
@@ -987,7 +987,6 @@ onChanged: (value) {
     }
   });
 },
-  
 
               decoration: InputDecoration(
                 hintText: hint,
