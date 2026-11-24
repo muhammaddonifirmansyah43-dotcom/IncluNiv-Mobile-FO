@@ -4,59 +4,63 @@ class DemoAuthStore {
 
   static final DemoAuthStore instance = DemoAuthStore._();
 
-  String? _nim;
+  String? _email;
   String? _password;
   String? _role;
 
-  // Penanda akun baru pendamping.
+  // Dipertahankan agar halaman lain tidak error.
   bool isNewPendampingLogin = false;
-
-  // Penanda akun Demo Mahasiswa.
   bool isDemoMahasiswaLogin = false;
 
-  // Menyimpan akun hasil registrasi.
+  // Menyimpan akun hasil registrasi berdasarkan EMAIL.
   void register({
-    required String nim,
+    required String email,
     required String password,
     required String role,
   }) {
-    _nim = nim.trim();
+    _email = email.trim().toLowerCase();
     _password = password;
     _role = role;
   }
 
-  // Memeriksa NIM, password, dan aktor.
-  bool canLogin(
-    String nim,
-    String password,
-    String role,
-  ) {
-    final cleanNim = nim.trim();
+  // Memeriksa email, password, dan jenis pengguna.
+  
+bool canLogin(
+  String email,
+  String password,
+  String role,
+) {
+  final cleanEmail = email.trim().toLowerCase();
 
-    // Reset status login sebelumnya.
-    isNewPendampingLogin = false;
-    isDemoMahasiswaLogin = false;
+  isNewPendampingLogin = false;
+  isDemoMahasiswaLogin = false;
 
-    // Akun Demo.
-    if (cleanNim == '2315407011111' &&
-        password == 'Demo12345') {
-      // Tandai jika login sebagai mahasiswa.
-      if (role == 'Mahasiswa') {
-        isDemoMahasiswaLogin = true;
-      }
-
-      return true;
-    }
-
-    // Akun hasil registrasi.
-    final valid = _nim == cleanNim &&
-        _password == password &&
-        _role == role;
-
-    if (valid && role == 'Pendamping') {
-      isNewPendampingLogin = true;
-    }
-
-    return valid;
+  // AKUN DEMO MAHASISWA
+  if (cleanEmail == 'mahasiswa@incluniv.test' &&
+      password == 'Demo12345' &&
+      role == 'Mahasiswa Disabilitas') {
+    isDemoMahasiswaLogin = true;
+    return true;
   }
+
+  // AKUN DEMO PENDAMPING
+  if (cleanEmail == 'pendamping@incluniv.test' &&
+      password == 'Demo12345' &&
+      role == 'Pendamping') {
+    return true;
+  }
+
+  // AKUN HASIL REGISTRASI FRONTEND
+  final valid =
+      _email == cleanEmail &&
+      _password == password &&
+      _role == role;
+
+  if (valid && role == 'Pendamping') {
+    isNewPendampingLogin = true;
+  }
+
+  return valid;
+}
+
 }
