@@ -6,6 +6,7 @@ import '../../../shared/widgets/app_illustration.dart';
 import '../register/register_page.dart';
 import '../../../services/auth_service.dart';
 import '../../../core/api/api_client.dart';
+import '../../../shared/models/demo_auth_store.dart';
 // =============================================
 // WARNA APLIKASI
 // =============================================
@@ -155,7 +156,7 @@ class _AuthBrand extends StatelessWidget {
 
 class LoginPage extends StatefulWidget {
   final VoidCallback? onRegister;
-  final void Function(String role)? onLoginSuccess;
+  final Future<void> Function(String role)? onLoginSuccess;
 
   const LoginPage({
     super.key,
@@ -239,6 +240,10 @@ await AuthService.login(
   expectedRole: expectedRole,
 );
 
+// Tandai sesi Pendamping yang berhasil login melalui backend.
+DemoAuthStore.instance.isBackendPendampingLogin =
+    selectedRole == 'Pendamping';
+
     if (!mounted) return;
 
     // Role yang dikirim backend
@@ -249,7 +254,7 @@ await AuthService.login(
 
     // Login berhasil
     if (widget.onLoginSuccess != null) {
-      widget.onLoginSuccess!(selectedRole);
+      await widget.onLoginSuccess!(selectedRole);
       return;
     }
 

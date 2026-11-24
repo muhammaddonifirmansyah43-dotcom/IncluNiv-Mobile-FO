@@ -12,6 +12,9 @@ class DemoAuthStore {
   bool isNewPendampingLogin = false;
   bool isDemoMahasiswaLogin = false;
 
+  // Menandai sesi pendamping yang berhasil login melalui backend.
+  bool isBackendPendampingLogin = false;
+
   // Menyimpan akun hasil registrasi berdasarkan EMAIL.
   void register({
     required String email,

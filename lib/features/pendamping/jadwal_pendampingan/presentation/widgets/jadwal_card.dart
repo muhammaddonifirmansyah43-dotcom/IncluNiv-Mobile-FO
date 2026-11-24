@@ -1,18 +1,18 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/jadwal_dummy.dart';
 import '../jadwal_style.dart';
 
 class JadwalCard extends StatelessWidget {
   final JadwalItem item;
+  final VoidCallback? onDetail;
   final VoidCallback? onAjukanPerizinan;
-  final VoidCallback? onSetujui;
   final VoidCallback? onKonfirmasi;
 
   const JadwalCard({
     super.key,
     required this.item,
+    this.onDetail,
     this.onAjukanPerizinan,
-    this.onSetujui,
     this.onKonfirmasi,
   });
 
@@ -33,8 +33,23 @@ class JadwalCard extends StatelessWidget {
           _scheduleBox(),
           const SizedBox(height: 14),
           _studentBox(),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onDetail,
+              icon: const Icon(
+                Icons.visibility_outlined,
+                size: 18,
+              ),
+              label: const Text('Lihat Detail'),
+              style: TextButton.styleFrom(
+                foregroundColor: JadwalColors.navy,
+              ),
+            ),
+          ),
           if (item.status != JadwalStatus.selesai) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             _actions(),
           ],
         ],
@@ -43,6 +58,8 @@ class JadwalCard extends StatelessWidget {
   }
 
   Widget _header() {
+    final hasCourseInfo = item.mataKuliah != null;
+
     return Row(
       children: [
         Container(
@@ -52,17 +69,34 @@ class JadwalCard extends StatelessWidget {
             shape: BoxShape.circle,
             color: JadwalColors.blue.withAlpha(46),
           ),
-          child: const Icon(Icons.devices,
-              size: 20, color: JadwalColors.blue),
+          child: const Icon(
+            Icons.devices,
+            size: 20,
+            color: JadwalColors.blue,
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(item.mataKuliah, style: JadwalText.courseTitle),
-              Text('${item.kelas} • ${item.sks} SKS',
-                  style: JadwalText.courseSub),
+              Text(
+                item.mataKuliah ?? 'Penugasan Pendampingan',
+                style: JadwalText.courseTitle,
+              ),
+              if (hasCourseInfo)
+                Text(
+                  [
+                    if (item.kelas != null) item.kelas!,
+                    if (item.sks != null) '${item.sks} SKS',
+                  ].join(' â€¢ '),
+                  style: JadwalText.courseSub,
+                )
+              else
+                Text(
+                  'ID Penugasan: ${item.id}',
+                  style: JadwalText.courseSub,
+                ),
             ],
           ),
         ),
@@ -80,7 +114,8 @@ class JadwalCard extends StatelessWidget {
         child: child,
       );
 
-  Widget _iconRow(IconData icon, Widget text, {double size = 18}) => Row(
+  Widget _iconRow(IconData icon, Widget text, {double size = 18}) =>
+      Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: size, color: JadwalColors.blue),
@@ -101,9 +136,10 @@ class JadwalCard extends StatelessWidget {
                 children: [
                   TextSpan(text: item.tanggal, style: JadwalText.dateBold),
                   TextSpan(
-                    text: '  •  ',
+                    text: '  â€¢  ',
                     style: JadwalText.dateLight.copyWith(
-                        color: JadwalColors.slate.withAlpha(120)),
+                      color: JadwalColors.slate.withAlpha(120),
+                    ),
                   ),
                   TextSpan(text: item.jam, style: JadwalText.dateLight),
                 ],
@@ -111,12 +147,18 @@ class JadwalCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          _iconRow(Icons.location_on_outlined,
-              Text(item.lokasi, style: JadwalText.infoRow)),
+          _iconRow(
+            Icons.location_on_outlined,
+            Text(item.lokasi, style: JadwalText.infoRow),
+          ),
           const SizedBox(height: 10),
-          _iconRow(Icons.badge_outlined,
-              Text('Mahasiswa: ${item.mahasiswa}',
-                  style: JadwalText.infoRow)),
+          _iconRow(
+            Icons.badge_outlined,
+            Text(
+              'Mahasiswa: ${item.mahasiswa}',
+              style: JadwalText.infoRow,
+            ),
+          ),
         ],
       ),
     );
@@ -124,6 +166,7 @@ class JadwalCard extends StatelessWidget {
 
   Widget _photo() {
     final url = item.fotoUrl;
+
     return Container(
       width: 90,
       height: 90,
@@ -135,9 +178,11 @@ class JadwalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: url == null
             ? _photoPlaceholder()
-            : Image.network(url,
+            : Image.network(
+                url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _photoPlaceholder(),),
+                errorBuilder: (_, _, _) => _photoPlaceholder(),
+              ),
       ),
     );
   }
@@ -150,8 +195,11 @@ class JadwalCard extends StatelessWidget {
             colors: [Color(0xFF5B8DEF), JadwalColors.navy],
           ),
         ),
-        child: const Icon(Icons.person,
-            size: 52, color: JadwalColors.white),
+        child: const Icon(
+          Icons.person,
+          size: 52,
+          color: JadwalColors.white,
+        ),
       );
 
   Widget _sideRow(IconData icon, String text) => Padding(
@@ -161,7 +209,9 @@ class JadwalCard extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: JadwalColors.blue),
             const SizedBox(width: 8),
-            Expanded(child: Text(text, style: JadwalText.sideInfo)),
+            Expanded(
+              child: Text(text, style: JadwalText.sideInfo),
+            ),
           ],
         ),
       );
@@ -176,7 +226,10 @@ class JadwalCard extends StatelessWidget {
             children: [
               _photo(),
               const SizedBox(height: 8),
-              Text(item.jenisDisabilitas, style: JadwalText.disability),
+              Text(
+                item.jenisDisabilitas,
+                style: JadwalText.disability,
+              ),
             ],
           ),
           const SizedBox(width: 14),
@@ -203,7 +256,10 @@ class JadwalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 9,
+          ),
           child: Text(label, style: JadwalText.button),
         ),
       ),
@@ -212,18 +268,21 @@ class JadwalCard extends StatelessWidget {
 
   Widget _actions() {
     if (item.status == JadwalStatus.akanDatang) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _pillButton('Ajukan Perizinan', JadwalColors.navy, onAjukanPerizinan),
-          _pillButton('Setujui', JadwalColors.navy, onSetujui),
-        ],
+      return Center(
+        child: _pillButton(
+          'Ajukan Perizinan',
+          JadwalColors.navy,
+          onAjukanPerizinan,
+        ),
       );
     }
-    // berlangsung
+
     return Center(
       child: _pillButton(
-          'Konfirmasi Kehadiran', JadwalColors.orange, onKonfirmasi),
+        'Konfirmasi Kehadiran',
+        JadwalColors.orange,
+        onKonfirmasi,
+      ),
     );
   }
 }

@@ -28,7 +28,7 @@ class PendampingHomeShell extends StatelessWidget {
   // Callback kembali ke Landing setelah logout.
   final VoidCallback? onLogoutConfirmed;
 
-  // Halaman Jadwal yang didaftarkan dari main.dart.
+  // Halaman tambahan yang didaftarkan dari main.dart.
   final Map<PendampingMenu, WidgetBuilder> additionalPages;
 
   const PendampingHomeShell({
@@ -44,19 +44,12 @@ class PendampingHomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      // SIDEBAR TETAP MEMBUKA DARI KIRI
       drawer: _PendampingDrawer(
         additionalPages: additionalPages,
         onLogoutConfirmed: onLogoutConfirmed,
       ),
-
       drawerScrimColor: Colors.black54,
       drawerEdgeDragWidth: 25,
-
-      // ====================================
-      // HEADER BERANDA PENDAMPING
-      // ====================================
       appBar: AppBar(
         backgroundColor: const Color(0xFFEEF2FF),
         surfaceTintColor: Colors.transparent,
@@ -65,11 +58,6 @@ class PendampingHomeShell extends StatelessWidget {
         toolbarHeight: 56,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
-
-        // ==================================
-        // TOMBOL HAMBURGER DI KIRI
-        // KETIKA SIDEBAR TERTUTUP
-        // ==================================
         leading: Builder(
           builder: (scaffoldContext) {
             return IconButton(
@@ -85,10 +73,6 @@ class PendampingHomeShell extends StatelessWidget {
             );
           },
         ),
-
-        // ==================================
-        // LOGO DAN NAMA INCLUNIV
-        // ==================================
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -98,15 +82,11 @@ class PendampingHomeShell extends StatelessWidget {
               height: 30,
               fit: BoxFit.contain,
             ),
-
             const SizedBox(width: 7),
-
             const AppLogo(fontSize: 23),
           ],
         ),
       ),
-
-      // BERANDA ASLI BUATAN ANGGOTA
       body: child,
     );
   }
@@ -137,13 +117,11 @@ class _PendampingDrawer extends StatelessWidget {
   Widget _placeholder(String title) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         title: Text(title),
         foregroundColor: navy,
         backgroundColor: lightBlue,
       ),
-
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -172,44 +150,36 @@ class _PendampingDrawer extends StatelessWidget {
     late final WidgetBuilder builder;
 
     switch (menu) {
-      // PROFIL PENDAMPING
       case PendampingMenu.profil:
         builder = (_) => ProfilePendampingPage(
               onLogoutConfirmed: onLogoutConfirmed,
             );
         break;
 
-      // NOTIFIKASI
       case PendampingMenu.notifikasi:
         builder = (_) => const NotifikasiPage();
         break;
 
-      // JADWAL KEGIATAN
       case PendampingMenu.jadwalKegiatan:
         builder = additionalPages[menu] ??
             (_) => _placeholder('Jadwal Kegiatan');
         break;
 
-      // PENGISIAN JADWAL
       case PendampingMenu.pengisianJadwal:
         builder = additionalPages[menu] ??
             (_) => _placeholder('Pengisian Jadwal');
         break;
 
-      // JADWAL PENDAMPINGAN
       case PendampingMenu.jadwalPendampingan:
         builder = additionalPages[menu] ??
             (_) => _placeholder('Jadwal Pendampingan');
         break;
     }
 
-    // Simpan Navigator sebelum Drawer ditutup.
     final navigator = Navigator.of(context);
 
-    // Tutup Drawer.
     navigator.pop();
 
-    // Buka halaman sesuai menu.
     navigator.push(
       MaterialPageRoute(
         builder: builder,
@@ -225,7 +195,6 @@ class _PendampingDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    // Lebar Sidebar responsif.
     final drawerWidth =
         (screenWidth * 0.84).clamp(250.0, 345.0).toDouble();
 
@@ -233,23 +202,18 @@ class _PendampingDrawer extends StatelessWidget {
       width: drawerWidth,
       backgroundColor: Colors.white,
       elevation: 10,
-
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
       ),
-
       child: SafeArea(
         child: Column(
           children: [
-            // =================================
-            // HEADER SIDEBAR TERBUKA
-            // =================================
+            // HEADER SIDEBAR
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(
                 horizontal: 12,
               ),
-
               decoration: const BoxDecoration(
                 color: lightBlue,
                 border: Border(
@@ -258,7 +222,6 @@ class _PendampingDrawer extends StatelessWidget {
                   ),
                 ),
               ),
-
               child: Row(
                 children: [
                   Image.asset(
@@ -267,17 +230,9 @@ class _PendampingDrawer extends StatelessWidget {
                     width: 30,
                     fit: BoxFit.contain,
                   ),
-
                   const SizedBox(width: 7),
-
                   const AppLogo(fontSize: 23),
-
                   const Spacer(),
-
-                  // =========================
-                  // HAMBURGER DI KANAN
-                  // SAAT SIDEBAR TERBUKA
-                  // =========================
                   IconButton(
                     tooltip: 'Tutup sidebar',
                     onPressed: () {
@@ -293,15 +248,12 @@ class _PendampingDrawer extends StatelessWidget {
               ),
             ),
 
-            // =================================
             // KONTEN SIDEBAR
-            // =================================
             Expanded(
               child: AnimatedBuilder(
                 animation: PendampingProfileStore.instance,
                 builder: (context, _) {
-                  final store =
-                      PendampingProfileStore.instance;
+                  final store = PendampingProfileStore.instance;
 
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(
@@ -310,11 +262,8 @@ class _PendampingDrawer extends StatelessWidget {
                       22,
                       25,
                     ),
-
                     children: [
-                      // FOTO PROFIL
                       _profilePhoto(store),
-
                       const SizedBox(height: 23),
 
                       // NAMA PENDAMPING
@@ -328,7 +277,6 @@ class _PendampingDrawer extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(height: 3),
 
                       // NOMOR INDUK
@@ -342,7 +290,6 @@ class _PendampingDrawer extends StatelessWidget {
                           height: 1.3,
                         ),
                       ),
-
                       const SizedBox(height: 3),
 
                       // EMAIL
@@ -361,9 +308,7 @@ class _PendampingDrawer extends StatelessWidget {
 
                       const SizedBox(height: 25),
 
-                      // =================================
                       // MENU PROFIL
-                      // =================================
                       _menuButton(
                         context,
                         title: 'Profile Pendamping',
@@ -371,9 +316,7 @@ class _PendampingDrawer extends StatelessWidget {
                         menu: PendampingMenu.profil,
                       ),
 
-                      // =================================
                       // MENU NOTIFIKASI
-                      // =================================
                       _menuButton(
                         context,
                         title: 'Notifikasi',
@@ -381,9 +324,7 @@ class _PendampingDrawer extends StatelessWidget {
                         menu: PendampingMenu.notifikasi,
                       ),
 
-                      // =================================
                       // MENU JADWAL KEGIATAN
-                      // =================================
                       _menuButton(
                         context,
                         title: 'Jadwal Kegiatan',
@@ -391,9 +332,7 @@ class _PendampingDrawer extends StatelessWidget {
                         menu: PendampingMenu.jadwalKegiatan,
                       ),
 
-                      // =================================
                       // MENU PENGISIAN JADWAL
-                      // =================================
                       _menuButton(
                         context,
                         title: 'Pengisian Jadwal',
@@ -401,9 +340,7 @@ class _PendampingDrawer extends StatelessWidget {
                         menu: PendampingMenu.pengisianJadwal,
                       ),
 
-                      // =================================
                       // MENU JADWAL PENDAMPINGAN
-                      // =================================
                       _menuButton(
                         context,
                         title: 'Jadwal Pendampingan',
@@ -434,14 +371,11 @@ class _PendampingDrawer extends StatelessWidget {
       child: Container(
         height: 122,
         width: 122,
-
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-
           color: foto == null
               ? peach
               : const Color(0xFFF0F2F8),
-
           image: foto == null
               ? null
               : DecorationImage(
@@ -449,7 +383,6 @@ class _PendampingDrawer extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
         ),
-
         child: foto == null
             ? const Icon(
                 Icons.person_rounded,
@@ -473,57 +406,43 @@ class _PendampingDrawer extends StatelessWidget {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 19),
-
       child: Align(
         alignment: Alignment.centerLeft,
-
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: 205,
           ),
-
           child: Material(
             color: lightBlue,
             elevation: 2,
             shadowColor: Colors.black26,
             borderRadius: BorderRadius.circular(10),
-
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
-
-              // Membuka halaman sesuai menu.
               onTap: () {
                 _openMenu(context, menu);
               },
-
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 11,
                   vertical: 11,
                 ),
-
                 child: Row(
                   children: [
-                    // IKON MENU
                     Container(
                       width: 28,
                       height: 28,
-
                       decoration: const BoxDecoration(
                         color: Color(0xFFD9E6FF),
                         shape: BoxShape.circle,
                       ),
-
                       child: Icon(
                         icon,
                         color: blue,
                         size: 17,
                       ),
                     ),
-
                     const SizedBox(width: 10),
-
-                    // NAMA MENU
                     Expanded(
                       child: Text(
                         title,

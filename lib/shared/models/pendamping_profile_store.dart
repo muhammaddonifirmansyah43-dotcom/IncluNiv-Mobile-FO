@@ -18,6 +18,7 @@ class PendampingProfileStore extends ChangeNotifier {
 
   bool get hasProfile => nim.isNotEmpty;
 
+  // Menyimpan data setelah registrasi.
   void saveRegistration({
     required String nama,
     required String nim,
@@ -33,9 +34,28 @@ class PendampingProfileStore extends ChangeNotifier {
     this.fakultas = fakultas;
     this.keahlian = keahlian;
     foto = null;
+
     notifyListeners();
   }
 
+  // Sinkronisasi profil dari backend setelah login.
+  void syncFromApi(Map<String, dynamic> profile) {
+    nama = profile['fullName']?.toString() ?? '';
+    nim = profile['studentCode']?.toString() ?? '';
+    email = profile['email']?.toString() ?? '';
+    telepon = profile['phoneNumber']?.toString() ?? '';
+    fakultas = profile['department']?.toString() ?? '';
+
+    final skills = profile['skills'];
+
+    keahlian = skills is List
+        ? skills.join(', ')
+        : skills?.toString() ?? '';
+
+    notifyListeners();
+  }
+
+  // Memperbarui profil secara lokal.
   void updateProfile({
     required String email,
     required String telepon,
@@ -58,6 +78,7 @@ class PendampingProfileStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Menghapus data profil saat logout.
   void clear() {
     nama = '';
     nim = '';
@@ -66,6 +87,7 @@ class PendampingProfileStore extends ChangeNotifier {
     fakultas = '';
     keahlian = '';
     foto = null;
+
     notifyListeners();
   }
 }
