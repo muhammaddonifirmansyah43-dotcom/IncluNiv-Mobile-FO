@@ -1,10 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../shared/models/pendamping_profile_store.dart';
-import '../../../shared/models/demo_auth_store.dart';
-import '../../mahasiswa/data/profil_store.dart';
+import '../../../services/register_service.dart';
 
 // JENIS AKTOR REGISTRASI
 enum RegisterRole {
@@ -60,7 +57,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final Map<TextEditingController, String> _errors = {};
 
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+bool _obscureConfirm = true;
+bool _isLoading = false;
 
   bool get isPendamping =>
       selectedRole == RegisterRole.pendamping;
@@ -136,6 +134,19 @@ void dispose() {
 
       if (foto == null || !mounted) return;
 
+final fotoBytes = await foto.readAsBytes();
+
+if (fotoBytes.length > 5 * 1024 * 1024) {
+  if (!mounted) return;
+
+ setState(() {
+  _fotoDipilih = null;
+  _errorFoto = 'Ukuran foto maksimal 5 MB';
+});
+
+  return;
+}
+
       final namaFile = foto.name.toLowerCase();
 
       final formatValid =
@@ -145,8 +156,9 @@ void dispose() {
 
       if (!formatValid) {
         setState(() {
-          _errorFoto = 'Gunakan JPG, JPEG, atau PNG';
-        });
+  _fotoDipilih = null;
+  _errorFoto = 'Gunakan JPG, JPEG, atau PNG';
+});
         return;
       }
 
@@ -231,124 +243,142 @@ void dispose() {
     return null;
   }
 
-  // ==========================================
-  // TOMBOL DAFTAR
-  // ==========================================
+  
   Future<void> _submitForm() async {
+  if (_isLoading) return;
 
-    final controllers = <TextEditingController>[
-      _namaController,
-      _nomorIndukController,
-      _emailController,
-      _fakultasController,
-      _teleponController,
-      if (isPendamping)
-        _keahlianController
-      else ...[
-        _disabilitasController,
-        _dukunganController,
-      ],
-      _passwordController,
-      _konfirmasiController,
-    ];
+  FocusScope.of(context).unfocus();
 
-    final newErrors = <TextEditingController, String>{};
+  // 1. KUMPULKAN INPUT SESUAI ROLE
+  final controllers = <TextEditingController>[
+    _namaController,
+    _nomorIndukController,
+    _emailController,
+    _fakultasController,
+    _teleponController,
 
-    for (final controller in controllers) {
-      final error = _validateInput(controller);
+    if (isPendamping)
+      _keahlianController
+    else ...[
+      _disabilitasController,
+      _dukunganController,
+    ],
 
-      if (error != null) {
-        newErrors[controller] = error;
-      }
+    _passwordController,
+    _konfirmasiController,
+  ];
+
+  // 2. VALIDASI FORM YANG SUDAH ADA
+  final newErrors = <TextEditingController, String>{};
+
+  for (final controller in controllers) {
+    final error = _validateInput(controller);
+
+    if (error != null) {
+      newErrors[controller] = error;
     }
+  }
 
-    setState(() {
-      _errors
-        ..clear()
-        ..addAll(newErrors);
+setState(() {
+  _errors
+    ..clear()
+    ..addAll(newErrors);
 
-      _errorFoto =
-          (!isPendamping && _fotoDipilih == null)
-              ? 'Foto wajib dipilih'
-              : null;
-    });
+  if (isPendamping) {
+    _errorFoto = null;
+  } else if (_fotoDipilih == null) {
+    _errorFoto ??= 'Foto wajib dipilih';
+  } else {
+    _errorFoto = null;
+  }
+});
 
-    // JANGAN LANJUT JIKA ADA ERROR
-    if (newErrors.isNotEmpty ||
-        (!isPendamping && _fotoDipilih == null)) {
-      return;
-    }
-   
+  // Jangan kirim jika form belum valid
+  if (newErrors.isNotEmpty ||
+      (!isPendamping && _fotoDipilih == null)) {
+    return;
+  }
 
-    // SIMPAN DATA PROFIL PENDAMPING
-    if (isPendamping) {
-      PendampingProfileStore.instance.saveRegistration(
-        nama: _namaController.text.trim(),
-        nim: _nomorIndukController.text.trim(),
-        email: _emailController.text.trim(),
-        telepon: _teleponController.text.trim(),
-        fakultas: _fakultasController.text.trim(),
-        keahlian: _keahlianController.text.trim(),
+  final registeringMentor = isPendamping;
+
+  // 3. MULAI LOADING
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    // 4. KIRIM REGISTRASI KE BACKEND
+    if (registeringMentor) {
+      // REGISTRASI PENDAMPING
+      await RegisterService.registerMentor(
+        fullName: _namaController.text,
+        studentCode: _nomorIndukController.text,
+        email: _emailController.text,
+        department: _fakultasController.text,
+        phoneNumber: _teleponController.text,
+        skills: _keahlianController.text,
+        password: _passwordController.text,
+        confirmPassword: _konfirmasiController.text,
       );
-    }
-
-    // SIMPAN DATA PROFIL MAHASISWA
-    if (!isPendamping) {
-      try {
-        final fotoBytes = await _fotoDipilih!.readAsBytes();
-
-        if (!mounted) return;
-
-        ProfilStore.instance.isiDariRegistrasi(
-          nama: _namaController.text.trim(),
-          nim: _nomorIndukController.text.trim(),
-          email: _emailController.text.trim(),
-          telepon: _teleponController.text.trim(),
-          prodi: _fakultasController.text.trim(),
-          disabilitas: _disabilitasController.text.trim(),
-          fotoBytes: fotoBytes,
-        );
-      } catch (e) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal membaca foto profil: $e'),
-          ),
-        );
-        return;
-      }
-    }
-
-    // SIMPAN AKUN UNTUK LOGIN DEMO
-    DemoAuthStore.instance.register(
-      nim: _nomorIndukController.text.trim(),
-      password: _passwordController.text,
-      role: isPendamping
-          ? 'Pendamping'
-          : 'Mahasiswa Disabilitas',
-    );
-
-    // NAVIGASI SETELAH REGISTRASI
-    if (widget.onRegistered != null) {
-      widget.onRegistered!();
-      return;
+    } else {
+      // REGISTRASI MAHASISWA + FOTO
+      await RegisterService.registerStudent(
+        fullName: _namaController.text,
+        studentCode: _nomorIndukController.text,
+        email: _emailController.text,
+        department: _fakultasController.text,
+        phoneNumber: _teleponController.text,
+        disabilityType: _disabilitasController.text,
+        supportNeeds: _dukunganController.text,
+        password: _passwordController.text,
+        confirmPassword: _konfirmasiController.text,
+        photo: _fotoDipilih!,
+      );
     }
 
     if (!mounted) return;
 
+    // 5. TAMPILKAN HASIL BERHASIL
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: navy,
         content: Text(
           'Registrasi '
-          '${isPendamping ? "Pendamping" : "Mahasiswa Difabel"} '
-          'berhasil. Silakan menuju halaman Login.',
+          '${registeringMentor ? "Pendamping" : "Mahasiswa Difabel"} '
+          'berhasil. Silakan login.',
         ),
       ),
     );
-  }
 
+    // 6. KEMBALI KE HALAMAN LOGIN
+    if (widget.onRegistered != null) {
+      widget.onRegistered!();
+    } else if (widget.onLogin != null) {
+      widget.onLogin!();
+    }
+  } catch (error) {
+    if (!mounted) return;
+
+    final message = error
+        .toString()
+        .replaceFirst('Exception: ', '');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: errorRed,
+        content: Text(
+          'Registrasi gagal: $message',
+        ),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}
   // ==========================================
   // TAMPILAN REGISTER
   // ==========================================
@@ -611,27 +641,36 @@ void dispose() {
 
                         // TOMBOL DAFTAR
                         SizedBox(
-                          height: 43,
-                          child: ElevatedButton(
-                            onPressed: _submitForm,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: blue,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Daftar',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
+  height: 43,
+  child: ElevatedButton(
+    onPressed: _isLoading ? null : _submitForm,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: blue,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: blue,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+    child: _isLoading
+        ? const SizedBox(
+            height: 18,
+            width: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
+        : const Text(
+            'Daftar',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+  ),
+),
 
                         const SizedBox(height: 12),
 
@@ -745,7 +784,7 @@ void dispose() {
               child: Row(
                 children: [
                   TextButton(
-                    onPressed: _pilihFoto,
+                    onPressed: _isLoading ? null : _pilihFoto,
                     style: TextButton.styleFrom(
                       foregroundColor: navy,
                       padding: const EdgeInsets.symmetric(
@@ -791,12 +830,14 @@ void dispose() {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Hapus pilihan foto',
-                      onPressed: () {
-                        setState(() {
-                          _fotoDipilih = null;
-                          _errorFoto = null;
-                        });
-                      },
+                     onPressed: _isLoading
+    ? null
+    : () {
+        setState(() {
+          _fotoDipilih = null;
+          _errorFoto = null;
+        });
+      },
                       icon: const Icon(
                         Icons.close,
                         size: 15,
@@ -852,7 +893,9 @@ void dispose() {
     return SizedBox(
       height: 36,
       child: ElevatedButton(
-        onPressed: () => _changeRole(role),
+        onPressed: _isLoading
+    ? null
+    : () => _changeRole(role),
         style: ElevatedButton.styleFrom(
           backgroundColor: selected
               ? orange

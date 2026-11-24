@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/app_illustration.dart';
-import '../../../shared/models/demo_auth_store.dart';
 import '../register/register_page.dart';
-
+import '../../../services/auth_service.dart';
+import '../../../core/api/api_client.dart';
 // =============================================
 // WARNA APLIKASI
 // =============================================
@@ -168,20 +168,21 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _nimController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
  
 
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _isLoading = false;
 
-  String? _nimError;
+  String? _emailError;
   String? _passwordError;
   String? _loginError;
 
   @override
   void dispose() {
-    _nimController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -190,61 +191,98 @@ class _LoginPageState extends State<LoginPage> {
   // =========================================
 
  
-void _login(String role) {
-  final nim = _nimController.text.trim();
+
+
+Future<void> _login(String selectedRole) async {
+  if (_isLoading) return;
+
+  final email = _emailController.text.trim();
   final password = _passwordController.text;
 
+  // Validasi input
   setState(() {
-    _nimError = nim.isEmpty
-        ? 'Wajib diisi'
-        : !RegExp(r'^\d+$').hasMatch(nim)
-            ? 'NIM harus berupa angka'
+    _emailError = email.isEmpty
+        ? 'Email wajib diisi'
+        : !RegExp(
+            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+          ).hasMatch(email)
+            ? 'Format email tidak valid'
             : null;
 
     _passwordError =
-        password.isEmpty ? 'Wajib diisi' : null;
+        password.isEmpty ? 'Password wajib diisi' : null;
 
     _loginError = null;
   });
 
-  // Jika kolom wajib belum diisi, tampilkan pesan.
-  // Tidak memaksa fokus dan tidak mengunci input.
-  if (_nimError != null || _passwordError != null) {
+  if (_emailError != null ||
+      _passwordError != null) {
     return;
   }
 
-  final isValid = DemoAuthStore.instance.canLogin(
-    nim,
-    password,
-    role,
-  );
-
-  // Jika akun atau password salah.
-  if (!isValid) {
-    setState(() {
-      _loginError = 'Username atau password salah';
-    });
-    return;
-  }
-
-  // Login berhasil.
   FocusScope.of(context).unfocus();
 
-  if (widget.onLoginSuccess != null) {
-    widget.onLoginSuccess!(role);
-    return;
-  }
+  setState(() {
+    _isLoading = true;
+  });
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      backgroundColor: _AuthColors.navy,
-      content: Text(
-        'Simulasi login sebagai $role berhasil. '
-        'Beranda belum dihubungkan pada preview ini.',
+  try {
+    // Login melalui backend Express
+    final expectedRole =
+    selectedRole == 'Mahasiswa Disabilitas'
+        ? 'STUDENT'
+        : 'MENTOR';
+
+await AuthService.login(
+  email: email,
+  password: password,
+  expectedRole: expectedRole,
+);
+
+    if (!mounted) return;
+
+    // Role yang dikirim backend
+    
+
+    // Sesuaikan dengan tombol login yang dipilih
+
+
+    // Login berhasil
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!(selectedRole);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: _AuthColors.navy,
+        content: Text(
+          'Login sebagai $selectedRole berhasil.',
+        ),
       ),
-    ),
-  );
+    );
+  } on ApiException catch (error) {
+    if (!mounted) return;
+
+    setState(() {
+      _loginError = error.message;
+    });
+  } catch (error) {
+    if (!mounted) return;
+
+    setState(() {
+      _loginError =
+          'Login gagal. Periksa koneksi atau data akun.';
+    });
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 }
+
 
   // =========================================
   // NAVIGASI KE REGISTER
@@ -421,7 +459,7 @@ void _login(String role) {
       width: double.infinity,
       height: 45,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: _isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor:
               const Color(0xFF0057BF),
@@ -491,15 +529,15 @@ void _login(String role) {
 
           // INPUT NIM
           _input(
-            label: 'NIM (Nomor Induk Mahasiswa)',
-            hint: 'Contoh: 215150200111001',
-            controller: _nimController,
+            label: 'Email',
+            hint: 'Contoh: nama_anda@student.ub.ac.id',
+            controller: _emailController,
             icon: Icons.badge_outlined,
-            type: TextInputType.number,
-            error: _nimError,
+            type: TextInputType.emailAddress,
+            error: _emailError,
             onChanged: (_) {
               setState(() {
-                _nimError = null;
+                _emailError = null;
                 _loginError = null;
               });
             },

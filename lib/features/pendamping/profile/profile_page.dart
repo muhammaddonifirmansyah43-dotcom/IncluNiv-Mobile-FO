@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../shared/models/pendamping_profile_store.dart';
+import '../../../services/mentor_profile_service.dart';
 import '../logout/logout_dialog.dart';
 
 class ProfilePendampingPage extends StatefulWidget {
@@ -29,56 +29,108 @@ class _ProfilePendampingPageState
   static const inputBg = Color(0xFFEEF2FF);
   static const peach = Color(0xFFFFD7BB);
 
-  final _store = PendampingProfileStore.instance;
+  // DATA PROFIL DARI BACKEND
+  Map<String, dynamic>? _profilApi;
+  bool _loadingProfil = true;
+  String? _errorProfil;
+
+  // MEMBACA FIELD DARI RESPONSE API
+  String _nilaiProfil(List<String> keys) {
+    final profil = _profilApi;
+
+    if (profil == null) return '-';
+
+    for (final key in keys) {
+      final value = profil[key];
+
+      if (value != null &&
+          value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+
+    return '-';
+  }
+
+  // MENGAMBIL PROFIL DARI BACKEND
+  Future<void> _ambilProfilPendamping() async {
+    if (!mounted) return;
+
+    setState(() {
+      _loadingProfil = true;
+      _errorProfil = null;
+    });
+
+    try {
+      final profile =
+          await MentorProfileService.getMyProfile();
+
+      if (!mounted) return;
+
+      setState(() {
+        _profilApi = profile;
+        _loadingProfil = false;
+      });
+
+      _loadData();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorProfil = error
+            .toString()
+            .replaceFirst('Exception: ', '');
+
+        _loadingProfil = false;
+      });
+    }
+  }
 
   final _emailController = TextEditingController();
   final _teleponController = TextEditingController();
   final _keahlianController = TextEditingController();
 
-  bool _isEditing = false;
+  final bool _isEditing = false;
   bool _showPassword = false;
   Uint8List? _pendingFoto;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    _store.addListener(_onStoreChanged);
+
+    // AMBIL PROFIL SAAT HALAMAN DIBUKA
+    _ambilProfilPendamping();
   }
 
+  // MENGISI CONTROLLER DARI DATA API
   void _loadData() {
-    _emailController.text = _store.email;
-    _teleponController.text = _store.telepon;
-    _keahlianController.text = _store.keahlian;
-  }
+    _emailController.text = _nilaiProfil(['email']);
 
-  void _onStoreChanged() {
-    if (!mounted) return;
+    _teleponController.text =
+        _nilaiProfil(['phoneNumber', 'telepon']);
 
-    if (!_isEditing) {
-      _loadData();
-      setState(() {});
-    }
+    _keahlianController.text =
+        _nilaiProfil(['skills', 'keahlian']);
   }
 
   @override
   void dispose() {
-    _store.removeListener(_onStoreChanged);
     _emailController.dispose();
     _teleponController.dispose();
     _keahlianController.dispose();
+
     super.dispose();
   }
 
+  // EDIT PROFIL BELUM DIHUBUNGKAN KE BACKEND
   void _startEdit() {
-    _loadData();
-
-    setState(() {
-      _isEditing = true;
-      _pendingFoto = null;
-    });
+    _showMessage(
+      'Edit profil belum terhubung ke API backend. '
+      'Data dari MySQL ditampilkan hanya untuk dibaca.',
+    );
   }
 
+  // MEMILIH FOTO (UNTUK INTEGRASI EDIT NANTI)
   Future<void> _pickPhoto() async {
     if (!_isEditing) return;
 
@@ -114,6 +166,7 @@ class _ProfilePendampingPageState
     }
   }
 
+  // SIMPAN PROFIL BELUM TERHUBUNG KE API UPDATE
   void _saveProfile() {
     final email = _emailController.text.trim();
     final telepon = _teleponController.text.trim();
@@ -122,7 +175,9 @@ class _ProfilePendampingPageState
     if (email.isEmpty ||
         telepon.isEmpty ||
         keahlian.isEmpty) {
-      _showMessage('Semua kolom yang diedit wajib diisi.');
+      _showMessage(
+        'Semua kolom yang diedit wajib diisi.',
+      );
       return;
     }
 
@@ -131,23 +186,15 @@ class _ProfilePendampingPageState
     ).hasMatch(email);
 
     if (!validEmail) {
-      _showMessage('Format email tidak valid.');
+      _showMessage(
+        'Format email tidak valid.',
+      );
       return;
     }
 
-    _store.updateProfile(
-      email: email,
-      telepon: telepon,
-      keahlian: keahlian,
-      foto: _pendingFoto,
+    _showMessage(
+      'Penyimpanan perubahan profil belum tersedia.',
     );
-
-    setState(() {
-      _isEditing = false;
-      _pendingFoto = null;
-    });
-
-    _showMessage('Perubahan profil berhasil disimpan.');
   }
 
   void _showMessage(String message) {
@@ -159,6 +206,7 @@ class _ProfilePendampingPageState
     );
   }
 
+  // LOGOUT AKAN DIINTEGRASIKAN SETELAH PROFIL
   Future<void> _confirmLogout() async {
     final confirmed = await LogoutDialog.show(context);
 
@@ -219,7 +267,10 @@ class _ProfilePendampingPageState
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(
-                      25, 14, 25, 24,
+                      25,
+                      14,
+                      25,
+                      24,
                     ),
                     child: Center(
                       child: ConstrainedBox(
@@ -242,53 +293,114 @@ class _ProfilePendampingPageState
 
                             const SizedBox(height: 12),
 
+                            // STATUS LOADING API
+                            if (_loadingProfil)
+                              const Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: 12,
+                                ),
+                                child:
+                                    LinearProgressIndicator(),
+                              ),
+
+                            // STATUS ERROR API
+                            if (_errorProfil != null)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(
+                                  bottom: 12,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Gagal memuat profil: '
+                                      '$_errorProfil',
+                                      textAlign:
+                                          TextAlign.center,
+                                    ),
+                                    TextButton(
+                                      onPressed:
+                                          _ambilProfilPendamping,
+                                      child: const Text(
+                                        'Coba Lagi',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                            // FOTO PROFIL
                             _buildPhoto(),
 
                             const SizedBox(height: 20),
 
+                            // NAMA DARI API
                             _profileField(
                               label: 'Nama Lengkap',
                               icon: Icons.person_outline,
-                              value: _store.nama,
+                              value: _nilaiProfil(
+                                ['fullName', 'nama'],
+                              ),
                             ),
 
+                            // NIM DARI API
                             _profileField(
-                              label: 'Nomor Induk Mahasiswa',
+                              label:
+                                  'Nomor Induk Mahasiswa',
                               icon: Icons.badge_outlined,
-                              value: _store.nim,
+                              value: _nilaiProfil(
+                                ['studentCode', 'nim'],
+                              ),
                             ),
 
+                            // EMAIL DARI API
                             _profileField(
                               label: 'Email',
                               icon: Icons.alternate_email,
-                              value: _store.email,
+                              value: _nilaiProfil(
+                                ['email'],
+                              ),
                               editable: true,
-                              controller: _emailController,
+                              controller:
+                                  _emailController,
                               keyboardType:
                                   TextInputType.emailAddress,
                             ),
 
+                            // TELEPON DARI API
                             _profileField(
                               label: 'Nomor Telepon',
                               icon: Icons.phone,
-                              value: _store.telepon,
+                              value: _nilaiProfil(
+                                ['phoneNumber', 'telepon'],
+                              ),
                               editable: true,
-                              controller: _teleponController,
-                              keyboardType: TextInputType.phone,
+                              controller:
+                                  _teleponController,
+                              keyboardType:
+                                  TextInputType.phone,
                             ),
 
+                            // FAKULTAS DARI API
                             _profileField(
-                              label: 'Fakultas/Program Studi',
+                              label:
+                                  'Fakultas/Program Studi',
                               icon: Icons.apartment,
-                              value: _store.fakultas,
+                              value: _nilaiProfil(
+                                ['department', 'fakultas'],
+                              ),
                             ),
 
+                            // KEAHLIAN DARI API
                             _profileField(
                               label: 'Keahlian',
                               icon: Icons.handyman_outlined,
-                              value: _store.keahlian,
+                              value: _nilaiProfil(
+                                ['skills', 'keahlian'],
+                              ),
                               editable: true,
-                              controller: _keahlianController,
+                              controller:
+                                  _keahlianController,
                             ),
 
                             _passwordField(),
@@ -315,8 +427,10 @@ class _ProfilePendampingPageState
 
   // FOTO PROFIL
   Widget _buildPhoto() {
-    final Uint8List? bytes =
-        _pendingFoto ?? _store.foto;
+    // Foto dummy tidak digunakan lagi.
+    // Integrasi URL foto backend akan dilakukan
+    // setelah respons API dipastikan.
+    final Uint8List? bytes = _pendingFoto;
 
     return Center(
       child: SizedBox(
@@ -456,9 +570,12 @@ class _ProfilePendampingPageState
                           ),
                         )
                       : Text(
-                          value.isEmpty ? '-' : value,
+                          value.isEmpty
+                              ? '-'
+                              : value,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          overflow:
+                              TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: navy,
                             fontSize: 11,
@@ -505,7 +622,9 @@ class _ProfilePendampingPageState
               fontWeight: FontWeight.w500,
             ),
           ),
+
           const SizedBox(height: 7),
+
           Container(
             height: 48,
             padding: const EdgeInsets.symmetric(
@@ -529,7 +648,9 @@ class _ProfilePendampingPageState
                   color: navy,
                   size: 17,
                 ),
+
                 const SizedBox(width: 10),
+
                 Expanded(
                   child: Text(
                     _showPassword
@@ -542,11 +663,13 @@ class _ProfilePendampingPageState
                     ),
                   ),
                 ),
+
                 IconButton(
                   tooltip: 'Informasi kata sandi',
                   onPressed: () {
                     setState(() {
-                      _showPassword = !_showPassword;
+                      _showPassword =
+                          !_showPassword;
                     });
                   },
                   icon: Icon(
@@ -579,16 +702,21 @@ class _ProfilePendampingPageState
                 width: 1.5,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(7),
+                borderRadius:
+                    BorderRadius.circular(7),
               ),
             ),
             child: const Text(
               'Keluar Akun',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(
+                fontSize: 12,
+              ),
             ),
           ),
         ),
+
         const SizedBox(width: 28),
+
         Expanded(
           child: ElevatedButton(
             onPressed: _startEdit,
@@ -597,12 +725,15 @@ class _ProfilePendampingPageState
               foregroundColor: Colors.white,
               elevation: 1,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(7),
+                borderRadius:
+                    BorderRadius.circular(7),
               ),
             ),
             child: const Text(
               'Edit Profile',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(
+                fontSize: 12,
+              ),
             ),
           ),
         ),
@@ -623,7 +754,8 @@ class _ProfilePendampingPageState
             foregroundColor: Colors.white,
             elevation: 1,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius:
+                  BorderRadius.circular(7),
             ),
           ),
           child: const Text(
